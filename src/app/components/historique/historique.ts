@@ -43,11 +43,10 @@ class Historique implements OnInit, OnDestroy {
 
   loadScans(page = 1) {
     this.loading = true;
-    let params = new HttpParams()
-      .set('page', page)
-      .set('page_size', this.pageSize)
-      .set('search', this.search.trim());
+    const search = this.search.trim();
+    let params = new HttpParams().set('page', page).set('page_size', this.pageSize);
 
+    if (search) params = params.set('search', search);
     if (this.filterRisk) params = params.set('risk', this.filterRisk.toUpperCase());
 
     this.http.get<any>(`${this.apiUrl}/scans/`, { params }).subscribe({

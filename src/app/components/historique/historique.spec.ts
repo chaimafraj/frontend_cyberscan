@@ -29,7 +29,7 @@ describe('Historique', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should load scans with an empty search parameter', () => {
+  it('should load scans without search parameter when search is empty', () => {
     component.search = '';
 
     component.loadScans();
@@ -38,7 +38,7 @@ describe('Historique', () => {
     expect(req.request.method).toBe('GET');
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.get('page_size')).toBe('5');
-    expect(req.request.params.get('search')).toBe('');
+    expect(req.request.params.has('search')).toBeFalse();
 
     req.flush({ results: [], total: 0, total_pages: 1, page: 1 });
   });
