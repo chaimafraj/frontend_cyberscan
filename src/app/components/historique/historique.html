@@ -14,7 +14,7 @@
         class="cyber-input"
         [(ngModel)]="search"
         placeholder="Rechercher un domaine... (Enter pour chercher)"
-        
+
       />
       <select class="cyber-select" [(ngModel)]="filterRisk" (change)="onFilterChange()">
         <option value="">TOUS LES RISQUES</option>
@@ -28,7 +28,6 @@
       }
     </div>
 
-    @if (!loading) {
       <div class="scans-table">
         <div class="table-header">
           <span>DOMAINE</span>
@@ -76,7 +75,6 @@
           <span class="page-info">{{ currentPage }} / {{ totalPages }} — {{ total }} scans</span>
         </div>
       }
-    }
 
   </div>
 
