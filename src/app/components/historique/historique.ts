@@ -1,9 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
-
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-historique',
@@ -15,13 +13,20 @@ import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
 })
 class Historique implements OnInit, OnDestroy {
   search = '';
-  searchActive = '';
   filterRisk = '';
   scans: any[] = [];
   selectedScan: any = null;
+  selectedProtocol: any = null;
   editMode = false;
   editDomaine = '';
-  loading = true;
+  loading = false;
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 5;
+  totalPages = 1;
+  total = 0;
+
   private matrixInterval: any;
   private apiUrl = 'http://127.0.0.1:8000/api';
 
@@ -36,52 +41,61 @@ class Historique implements OnInit, OnDestroy {
     if (this.matrixInterval) clearInterval(this.matrixInterval);
   }
 
-  loadScans(search = '', risk = '') {
+  loadScans(page = 1) {
     this.loading = true;
-    let params = new HttpParams();
+    let url = `${this.apiUrl}/scans/?page=${page}&page_size=${this.pageSize}`;
+    if (this.search) url += `&search=${encodeURIComponent(this.search)}`;
+    if (this.filterRisk) url += `&risk=${this.filterRisk.toUpperCase()}`;
 
-    if (this.search) {
-      params = params.set('search', this.search);
-    }
-
-    if (this.filterRisk) {
-      params = params.set('risk', this.filterRisk);
-    }
-
-    this.http.get<any[]>(`${this.apiUrl}/scans`, { params }).subscribe({
+    this.http.get<any>(url).subscribe({
       next: (data) => {
-        this.scans = data.map((s) => ({
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        this.total = data.total ?? list.length;
+        this.totalPages = data.total_pages ?? 1;
+        this.currentPage = data.page ?? page;
+
+        this.scans = list.map((s: any) => ({
           ...s,
           riskClass: s.score_risque_ia >= 7 ? 'danger' : s.score_risque_ia >= 4 ? 'warn' : 'ok',
           statut: s.score_risque_ia >= 7 ? 'CRITIQUE' : s.score_risque_ia >= 4 ? 'MOYEN' : 'FAIBLE',
         }));
         this.loading = false;
       },
-      error: () => {
+      error: (err) => {
+        console.error('API Error:', err);
         this.loading = false;
       },
     });
   }
 
   get filteredScans() {
-    return this.scans.filter((s) => {
-      const matchSearch = s.domaine.toLowerCase().includes(this.searchActive.toLowerCase());
-      const matchRisk =
-        !this.filterRisk ||
-        (this.filterRisk === 'high' && s.score_risque_ia >= 7) ||
-        (this.filterRisk === 'medium' && s.score_risque_ia >= 4 && s.score_risque_ia < 7) ||
-        (this.filterRisk === 'low' && s.score_risque_ia < 4);
-      return matchSearch && matchRisk;
-    });
+    return this.scans;
   }
 
   lancerRecherche() {
-    this.searchActive = this.search;
-    this.loadScans(this.search, this.filterRisk);
+    this.currentPage = 1;
+    this.loadScans(1);
   }
+
   onFilterChange() {
-    this.loadScans(this.search, this.filterRisk);
+    this.currentPage = 1;
+    this.loadScans(1);
   }
+
+  goToPage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.loadScans(page);
+  }
+
+  get pages(): number[] {
+    const range: number[] = [];
+    const start = Math.max(1, this.currentPage - 2);
+    const end = Math.min(this.totalPages, this.currentPage + 2);
+    for (let i = start; i <= end; i++) range.push(i);
+    return range;
+  }
+
   viewScan(scan: any) {
     this.selectedScan = scan;
     this.editMode = false;
@@ -106,7 +120,7 @@ class Historique implements OnInit, OnDestroy {
         next: (updated) => {
           this.selectedScan.domaine = updated.domaine;
           this.editMode = false;
-          this.loadScans();
+          this.loadScans(this.currentPage);
         },
         error: () => alert('Erreur lors de la mise à jour'),
       });
@@ -115,14 +129,53 @@ class Historique implements OnInit, OnDestroy {
   deleteScan(scan: any, event: Event) {
     event.stopPropagation();
     if (!confirm(`Supprimer le scan de "${scan.domaine}" ?`)) return;
-
     this.http.delete(`${this.apiUrl}/scans/${scan.id}/`).subscribe({
       next: () => {
         this.scans = this.scans.filter((s) => s.id !== scan.id);
         if (this.selectedScan?.id === scan.id) this.closeModal();
+        this.loadScans(this.currentPage);
       },
       error: () => alert('Erreur lors de la suppression'),
     });
+  }
+
+  showProtocolDetail(protocol: any) {
+    const info: any = {
+      'TLSv1.0': {
+        titre: 'TLS 1.0 — VULNÉRABLE',
+        description: 'Vulnérable aux attaques POODLE et BEAST.',
+        risque: 'ÉLEVÉ',
+        solution: 'Désactiver TLS 1.0 et migrer vers TLS 1.2+.',
+      },
+      'TLSv1.1': {
+        titre: 'TLS 1.1 — OBSOLÈTE',
+        description: 'Déprécié par RFC 8996 en 2021.',
+        risque: 'MOYEN',
+        solution: 'Désactiver TLS 1.1.',
+      },
+      'TLSv1.2': {
+        titre: 'TLS 1.2 — SÉCURISÉ',
+        description: 'Protocole sécurisé recommandé.',
+        risque: 'FAIBLE',
+        solution: 'Aucune action requise.',
+      },
+      'TLSv1.3': {
+        titre: 'TLS 1.3 — OPTIMAL',
+        description: 'Meilleure sécurité et performance.',
+        risque: 'AUCUN',
+        solution: 'Configuration optimale.',
+      },
+    };
+    this.selectedProtocol = info[protocol.name] ?? {
+      titre: protocol.name,
+      description: 'Protocole détecté.',
+      risque: protocol.status,
+      solution: 'Consulter la documentation.',
+    };
+  }
+
+  closeProtocolDetail() {
+    this.selectedProtocol = null;
   }
 
   startMatrix() {
@@ -148,63 +201,6 @@ class Historique implements OnInit, OnDestroy {
       }, 50);
     }, 100);
   }
-  selectedProtocol: any = null;
-
-  protocolDescriptions: any = {
-    'TLSv1.0': {
-      titre: 'TLS 1.0 — VULNÉRABLE',
-      description:
-        'Protocole obsolète depuis 2020. Vulnérable aux attaques POODLE et BEAST. Désactivé par la plupart des navigateurs modernes.',
-      risque: 'ÉLEVÉ',
-      solution: 'Désactiver TLS 1.0 sur le serveur et migrer vers TLS 1.2 ou TLS 1.3.',
-    },
-    'TLSv1.1': {
-      titre: 'TLS 1.1 — OBSOLÈTE',
-      description:
-        'Protocole déprécié en 2021 par le RFC 8996. Vulnérable aux attaques par rétrogradation de protocole.',
-      risque: 'MOYEN',
-      solution: 'Désactiver TLS 1.1 et utiliser uniquement TLS 1.2 et TLS 1.3.',
-    },
-    'TLSv1.2': {
-      titre: 'TLS 1.2 — SÉCURISÉ',
-      description: 'Protocole largement supporté et sécurisé. Recommandé comme minimum acceptable.',
-      risque: 'FAIBLE',
-      solution:
-        'Aucune action requise. Continuer à supporter TLS 1.2 avec des cipher suites sécurisées.',
-    },
-    'TLSv1.3': {
-      titre: 'TLS 1.3 — OPTIMAL',
-      description: 'Dernière version du protocole TLS. Offre la meilleure sécurité et performance.',
-      risque: 'AUCUN',
-      solution: 'Configuration optimale. Aucune action requise.',
-    },
-    SSLv2: {
-      titre: 'SSL 2.0 — CRITIQUE',
-      description: 'Protocole extrêmement dangereux. Vulnérable à de nombreuses attaques connues.',
-      risque: 'CRITIQUE',
-      solution: 'Désactiver immédiatement SSL 2.0 sur le serveur.',
-    },
-    SSLv3: {
-      titre: 'SSL 3.0 — CRITIQUE',
-      description: "Vulnérable à l'attaque POODLE. Déprécié depuis 2015 par le RFC 7568.",
-      risque: 'CRITIQUE',
-      solution: 'Désactiver immédiatement SSL 3.0 sur le serveur.',
-    },
-  };
-
-  showProtocolDetail(protocol: any) {
-    this.selectedProtocol = this.protocolDescriptions[protocol.name] || {
-      titre: protocol.name,
-      description: 'Aucune information disponible pour ce protocole.',
-      risque: 'INCONNU',
-      solution: 'Analyser manuellement ce protocole.',
-    };
-  }
-
-  closeProtocolDetail() {
-    this.selectedProtocol = null;
-  }
 }
 
-export {Historique};
-
+export { Historique };

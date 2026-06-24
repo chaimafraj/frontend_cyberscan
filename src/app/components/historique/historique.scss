@@ -678,4 +678,54 @@ body[data-theme="light"] .option-card label {
   padding: 4px;
   border-left: 2px solid #00ff41;
 }
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;   /* ← centrage */
+  gap: 8px;
+  margin-top: 24px;
+  padding: 16px 0 24px 0;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
+}
 
+.page-btn {
+  background: transparent;
+  border: 1px solid #00FF4133;
+  color: #00FF41;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+  min-width: 36px;
+  text-align: center;
+}
+
+.page-btn:hover:not([disabled]) {
+  border-color: #00FF41;
+  background: #00FF4115;
+  box-shadow: 0 0 8px #00FF4133;
+}
+
+.page-btn[disabled] {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.page-btn.active {
+  border-color: #00FF41;
+  background: #00FF4122;
+  box-shadow: 0 0 10px #00FF4144;
+  font-weight: bold;
+}
+
+.page-info {
+  margin-left: 12px;
+  color: #00FF4166;
+  font-size: 11px;
+  letter-spacing: 2px;
+}

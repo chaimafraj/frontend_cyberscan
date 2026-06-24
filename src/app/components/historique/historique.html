@@ -6,7 +6,7 @@
 
     <div class="page-header">
       <h2 class="page-title">[ HISTORIQUE DES SCANS ]</h2>
-      <p class="page-sub">Tous les scans effectués — {{ scans.length }} au total</p>
+      <p class="page-sub">Tous les scans effectués — {{ total }} au total</p>
     </div>
 
     <div class="filter-bar">
@@ -22,12 +22,11 @@
         <option value="medium">MOYEN</option>
         <option value="low">FAIBLE</option>
       </select>
-      <button class="refresh-btn" (click)="lancerRecherche()">⟳ Recherche</button>
-    </div>
 
-    @if (loading) {
-      <div class="loading-msg">[ ► ] CHARGEMENT DES SCANS...</div>
-    }
+      @if (loading) {
+        <button class="refresh-btn" (click)="lancerRecherche()">⟳ Recherche</button>
+      }
+    </div>
 
     @if (!loading) {
       <div class="scans-table">
@@ -58,6 +57,25 @@
           <div class="no-results">Aucun scan trouvé.</div>
         }
       </div>
+
+      <!-- PAGINATION -->
+      @if (totalPages >= 1 && !loading) {
+        <div class="pagination">
+          <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
+          <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
+
+          @for (p of pages; track p) {
+            <button class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">
+              {{ p }}
+            </button>
+          }
+
+          <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
+          <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">»</button>
+
+          <span class="page-info">{{ currentPage }} / {{ totalPages }} — {{ total }} scans</span>
+        </div>
+      }
     }
 
   </div>
@@ -110,7 +128,7 @@
     </div>
   }
 
-  <!-- MODAL PROTOCOLE — EN DEHORS du modal détail -->
+  <!-- MODAL PROTOCOLE -->
   @if (selectedProtocol) {
     <div class="proto-modal-overlay" (click)="closeProtocolDetail()">
       <div class="proto-modal-box" (click)="$event.stopPropagation()">
