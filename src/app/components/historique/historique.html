@@ -14,7 +14,7 @@
         class="cyber-input"
         [(ngModel)]="search"
         placeholder="Rechercher un domaine... (Enter pour chercher)"
-        (keyup.enter)="lancerRecherche()"
+        
       />
       <select class="cyber-select" [(ngModel)]="filterRisk" (change)="onFilterChange()">
         <option value="">TOUS LES RISQUES</option>
