@@ -77,10 +77,6 @@ class Historique implements OnInit, OnDestroy {
     });
   }
 
-  get filteredScans() {
-    return this.dataSource.data;
-  }
-
   lancerRecherche() {
     this.currentPage = 1;
     this.loadScans(1);
@@ -91,11 +87,6 @@ class Historique implements OnInit, OnDestroy {
     this.loadScans(1);
   }
 
-  goToPage(page: number) {
-    if (page < 1 || page > this.totalPages) return;
-    this.currentPage = page;
-    this.loadScans(page);
-  }
 
   onPageChange(event: PageEvent) {
     this.pageSize = event.pageSize;
@@ -103,13 +94,6 @@ class Historique implements OnInit, OnDestroy {
     this.loadScans(this.currentPage);
   }
 
-  get pages(): number[] {
-    const range: number[] = [];
-    const start = Math.max(1, this.currentPage - 2);
-    const end = Math.min(this.totalPages, this.currentPage + 2);
-    for (let i = start; i <= end; i++) range.push(i);
-    return range;
-  }
 
   viewScan(scan: any) {
     this.selectedScan = scan;
@@ -119,26 +103,6 @@ class Historique implements OnInit, OnDestroy {
   closeModal() {
     this.selectedScan = null;
     this.editMode = false;
-  }
-
-  startEdit() {
-    this.editDomaine = this.selectedScan.domaine;
-    this.editMode = true;
-  }
-
-  saveEdit() {
-    this.http
-      .put<any>(`${this.apiUrl}/scans/${this.selectedScan.id}/`, {
-        domaine: this.editDomaine,
-      })
-      .subscribe({
-        next: (updated) => {
-          this.selectedScan.domaine = updated.domaine;
-          this.editMode = false;
-          this.loadScans(this.currentPage);
-        },
-        error: () => alert('Erreur lors de la mise à jour'),
-      });
   }
 
   deleteScan(scan: any, event: Event) {
