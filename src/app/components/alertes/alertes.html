@@ -1,0 +1,44 @@
+<div class="alertes-page">
+  <canvas id="alertes-matrix"></canvas>
+  <div class="scanline"></div>
+
+  <div class="alertes-content">
+
+    <div class="page-header">
+      <h2 class="page-title">[ SYSTÈME D'ALERTES ]</h2>
+      <p class="page-sub">Notifications de sécurité en temps réel</p>
+    </div>
+
+    <div class="alertes-stats">
+      <div class="alerte-stat danger">
+        <div class="stat-num">3</div>
+        <div class="stat-label">CRITIQUES</div>
+      </div>
+      <div class="alerte-stat warn">
+        <div class="stat-num">5</div>
+        <div class="stat-label">MOYENNES</div>
+      </div>
+      <div class="alerte-stat ok">
+        <div class="stat-num">2</div>
+        <div class="stat-label">FAIBLES</div>
+      </div>
+      <div class="alerte-stat">
+        <div class="stat-num">10</div>
+        <div class="stat-label">TOTAL</div>
+      </div>
+    </div>
+
+    <div class="alertes-list">
+      <div class="alerte-item" *ngFor="let alerte of alertes" [ngClass]="alerte.type">
+        <div class="alerte-icon">{{ alerte.icon }}</div>
+        <div class="alerte-info">
+          <div class="alerte-title">{{ alerte.titre }}</div>
+          <div class="alerte-msg">{{ alerte.message }}</div>
+          <div class="alerte-date">{{ alerte.date }}</div>
+        </div>
+        <div class="alerte-badge" [ngClass]="alerte.type">{{ alerte.niveau }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>

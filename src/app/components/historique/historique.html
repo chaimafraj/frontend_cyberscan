@@ -1,0 +1,139 @@
+<div class="historique-page">
+  <canvas id="hist-matrix"></canvas>
+  <div class="scanline"></div>
+
+  <div class="historique-content">
+
+    <div class="page-header">
+      <h2 class="page-title">[ HISTORIQUE DES SCANS ]</h2>
+      <p class="page-sub">Tous les scans effectués — {{ scans.length }} au total</p>
+    </div>
+
+    <div class="filter-bar">
+      <input
+        class="cyber-input"
+        [(ngModel)]="search"
+        placeholder="Rechercher un domaine... (Enter pour chercher)"
+        (keyup.enter)="lancerRecherche()"
+      />
+      <select class="cyber-select" [(ngModel)]="filterRisk" (change)="onFilterChange()">
+        <option value="">TOUS LES RISQUES</option>
+        <option value="high">CRITIQUE</option>
+        <option value="medium">MOYEN</option>
+        <option value="low">FAIBLE</option>
+      </select>
+      <button class="refresh-btn" (click)="lancerRecherche()">⟳ Recherche</button>
+    </div>
+
+    @if (loading) {
+      <div class="loading-msg">[ ► ] CHARGEMENT DES SCANS...</div>
+    }
+
+    @if (!loading) {
+      <div class="scans-table">
+        <div class="table-header">
+          <span>DOMAINE</span>
+          <span>DATE</span>
+          <span>PROTOCOLES</span>
+          <span>SCORE IA</span>
+          <span>STATUT</span>
+          <span>ACTIONS</span>
+        </div>
+
+        @for (scan of filteredScans; track scan.id) {
+          <div class="table-row" (click)="viewScan(scan)">
+            <span class="domain">{{ scan.domaine }}</span>
+            <span class="date">{{ scan.date_scan | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span class="proto">{{ scan.resultats_ssl?.protocols?.length || 0 }} protocole(s)</span>
+            <span class="score" [ngClass]="scan.riskClass">{{ scan.score_risque_ia }}/10</span>
+            <span class="badge" [ngClass]="scan.riskClass">{{ scan.statut }}</span>
+            <span class="actions">
+              <button class="action-btn view-btn" (click)="viewScan(scan); $event.stopPropagation()">👁</button>
+              <button class="action-btn delete-btn" (click)="deleteScan(scan, $event)">🗑</button>
+            </span>
+          </div>
+        }
+
+        @if (filteredScans.length === 0) {
+          <div class="no-results">Aucun scan trouvé.</div>
+        }
+      </div>
+    }
+
+  </div>
+
+  <!-- MODAL DETAIL -->
+  @if (selectedScan) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <span>[ DÉTAIL DU SCAN ]</span>
+          <button class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-row">
+            <span class="label">DOMAINE:</span>
+            <span class="value">{{ selectedScan.domaine }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">DATE:</span>
+            <span class="value">{{ selectedScan.date_scan | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">SCORE IA:</span>
+            <span class="value" [ngClass]="selectedScan.riskClass">{{ selectedScan.score_risque_ia }}/10</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">PROTOCOLES:</span>
+          </div>
+          <div class="proto-list">
+            @for (p of selectedScan.resultats_ssl?.protocols; track p.name) {
+              <div class="proto-item" (click)="showProtocolDetail(p); $event.stopPropagation()" style="cursor:pointer">
+                <span>{{ p.name }}</span>
+                @if (p.status === 'secure') {
+                  <span class="badge-ok">SECURE</span>
+                }
+                @if (p.status === 'obsolete') {
+                  <span class="badge-warn">OBSOLÈTE</span>
+                }
+                @if (p.status === 'vulnerable') {
+                  <span class="badge-danger">VULNÉRABLE</span>
+                }
+              </div>
+            }
+          </div>
+          <div class="modal-actions">
+            <button class="modal-btn delete-btn" (click)="deleteScan(selectedScan, $event)">🗑 SUPPRIMER</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL PROTOCOLE — EN DEHORS du modal détail -->
+  @if (selectedProtocol) {
+    <div class="proto-modal-overlay" (click)="closeProtocolDetail()">
+      <div class="proto-modal-box" (click)="$event.stopPropagation()">
+        <div class="proto-modal-header">
+          <span>{{ selectedProtocol.titre }}</span>
+          <button class="close-btn" (click)="closeProtocolDetail()">✕</button>
+        </div>
+        <div class="proto-modal-body">
+          <div class="detail-row">
+            <span class="label">DESCRIPTION:</span>
+            <span class="value">{{ selectedProtocol.description }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">NIVEAU DE RISQUE:</span>
+            <span class="value danger">{{ selectedProtocol.risque }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">SOLUTION:</span>
+            <span class="value">{{ selectedProtocol.solution }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

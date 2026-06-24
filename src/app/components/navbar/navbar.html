@@ -1,0 +1,26 @@
+<nav class="navbar">
+  <canvas id="matrix-bg"></canvas>
+  <div class="scanline"></div>
+
+  <div class="nav-content">
+    <div class="logo">CYBER<span>SCAN</span></div>
+
+    <ul class="nav-links">
+      <li><a routerLink="/dashboard" routerLinkActive="active">DASHBOARD</a></li>
+      <li><a routerLink="/scanner" routerLinkActive="active">SCANNER</a></li>
+      <li><a routerLink="/historique" routerLinkActive="active">HISTORIQUE</a></li>
+      <li><a routerLink="/alertes" routerLinkActive="active">ALERTES</a></li>
+    </ul>
+
+    <div class="nav-right">
+      <button class="theme-toggle" (click)="toggleTheme()">
+        {{ isDark ? '☀ LIGHT' : '☾ DARK' }}
+      </button>
+      <button class="check-btn" (click)="checkBackend()">⟳ VERIFIER BACKEND</button>
+      <div class="nav-status" [ngClass]="{'offline': !backendOnline}">
+        <span class="status-dot"></span>
+        <span class="status-text">{{ backendOnline ? 'SYSTEM ONLINE' : 'BACKEND OFFLINE' }}</span>
+      </div>
+    </div>
+  </div>
+</nav>
