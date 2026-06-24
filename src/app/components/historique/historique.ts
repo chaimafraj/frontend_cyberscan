@@ -27,8 +27,7 @@ class Historique implements OnInit, OnDestroy {
 
   // Pagination
   currentPage = 1;
-  pageSize = 5;
-  pageSizeOptions = [5, 10, 25, 50];
+  pageSize = 10;
   totalPages = 1;
   total = 0;
 

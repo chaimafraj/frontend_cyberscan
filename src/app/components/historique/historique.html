@@ -83,8 +83,8 @@
           [length]="total"
           [pageIndex]="currentPage - 1"
           [pageSize]="pageSize"
-          [pageSizeOptions]="pageSizeOptions"
           [disabled]="loading"
+          hidePageSize
           showFirstLastButtons
           (page)="onPageChange($event)"
           aria-label="Pagination des scans"

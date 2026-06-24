@@ -113,13 +113,18 @@
 .scans-table {
   border: 1px solid #00FF4133;
   background: #0d1a0d;
+  box-shadow: 0 0 18px #00FF4114;
   overflow: hidden;
 }
 
 .cyber-table {
   width: 100%;
-  background: transparent;
+  background: #081108;
   border-collapse: collapse;
+  --mat-table-background-color: #081108;
+  --mat-table-header-headline-color: #00FF4188;
+  --mat-table-row-item-label-text-color: #00FF41;
+  --mat-table-row-item-outline-color: #00FF4111;
 }
 
 .cyber-table .mat-mdc-header-row {
@@ -129,6 +134,7 @@
 
 .cyber-table .mat-mdc-row {
   height: 48px;
+  background: #081108;
   border-bottom: 1px solid #00FF4111;
   cursor: pointer;
   transition: background 0.2s;
@@ -139,6 +145,7 @@
 }
 
 .cyber-table .mat-mdc-header-cell {
+  background: transparent;
   border-bottom: 1px solid #00FF4133;
   color: #00FF4188;
   font-family: 'Share Tech Mono', monospace;
@@ -149,6 +156,7 @@
 }
 
 .cyber-table .mat-mdc-cell {
+  background: transparent;
   border-bottom: 1px solid #00FF4111;
   color: #00FF41;
   font-family: 'Share Tech Mono', monospace;
@@ -277,9 +285,16 @@
   border-top: 1px solid #00FF4133;
   color: #00FF4188;
   font-family: 'Share Tech Mono', monospace;
+  --mat-paginator-container-background-color: #071107;
+  --mat-paginator-container-text-color: #00FF4188;
+  --mat-paginator-enabled-icon-color: #00FF41;
+  --mat-paginator-disabled-icon-color: #00FF4133;
+  --mat-select-enabled-trigger-text-color: #00FF4188;
+  --mat-select-enabled-arrow-color: #00FF4188;
 }
 
 .cyber-paginator .mat-mdc-paginator-container {
+  justify-content: center;
   min-height: 52px;
 }
 
