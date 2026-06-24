@@ -1,11 +1,13 @@
-import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 
 @Component({
   selector: 'app-historique',
-  imports: [FormsModule, CommonModule, HttpClientModule],
+  imports: [FormsModule, CommonModule, HttpClientModule, MatTableModule, MatPaginatorModule],
   templateUrl: './historique.html',
   styleUrl: './historique.scss',
   standalone: true,
@@ -15,6 +17,8 @@ class Historique implements OnInit, OnDestroy {
   search = '';
   filterRisk = '';
   scans: any[] = [];
+  dataSource = new MatTableDataSource<any>([]);
+  displayedColumns = ['domaine', 'date', 'protocols', 'score', 'statut', 'actions'];
   selectedScan: any = null;
   selectedProtocol: any = null;
   editMode = false;
@@ -24,13 +28,16 @@ class Historique implements OnInit, OnDestroy {
   // Pagination
   currentPage = 1;
   pageSize = 5;
+  pageSizeOptions = [5, 10, 25, 50];
   totalPages = 1;
   total = 0;
 
   private matrixInterval: any;
   private apiUrl = 'http://127.0.0.1:8000/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient
+  ) {}
 
   ngOnInit() {
     this.startMatrix();
@@ -52,8 +59,8 @@ class Historique implements OnInit, OnDestroy {
     this.http.get<any>(`${this.apiUrl}/scans/`, { params }).subscribe({
       next: (data) => {
         const list = Array.isArray(data) ? data : (data.results ?? []);
-        this.total = data.total ?? list.length;
-        this.totalPages = data.total_pages ?? 1;
+        this.total = data.total ?? data.count ?? list.length;
+        this.totalPages = data.total_pages ?? Math.max(1, Math.ceil(this.total / this.pageSize));
         this.currentPage = data.page ?? page;
 
         this.scans = list.map((s: any) => ({
@@ -61,6 +68,7 @@ class Historique implements OnInit, OnDestroy {
           riskClass: s.score_risque_ia >= 7 ? 'danger' : s.score_risque_ia >= 4 ? 'warn' : 'ok',
           statut: s.score_risque_ia >= 7 ? 'CRITIQUE' : s.score_risque_ia >= 4 ? 'MOYEN' : 'FAIBLE',
         }));
+        this.dataSource.data = this.scans;
         this.loading = false;
       },
       error: (err) => {
@@ -71,7 +79,7 @@ class Historique implements OnInit, OnDestroy {
   }
 
   get filteredScans() {
-    return this.scans;
+    return this.dataSource.data;
   }
 
   lancerRecherche() {
@@ -88,6 +96,12 @@ class Historique implements OnInit, OnDestroy {
     if (page < 1 || page > this.totalPages) return;
     this.currentPage = page;
     this.loadScans(page);
+  }
+
+  onPageChange(event: PageEvent) {
+    this.pageSize = event.pageSize;
+    this.currentPage = event.pageIndex + 1;
+    this.loadScans(this.currentPage);
   }
 
   get pages(): number[] {
@@ -134,6 +148,7 @@ class Historique implements OnInit, OnDestroy {
     this.http.delete(`${this.apiUrl}/scans/${scan.id}/`).subscribe({
       next: () => {
         this.scans = this.scans.filter((s) => s.id !== scan.id);
+        this.dataSource.data = this.scans;
         if (this.selectedScan?.id === scan.id) this.closeModal();
         this.loadScans(this.currentPage);
       },

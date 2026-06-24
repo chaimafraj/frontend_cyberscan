@@ -1,3 +1,41 @@
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+body {
+  // Default the application to a light color theme. This can be changed to
+  // `dark` to enable the dark color theme, or to `light dark` to defer to the
+  // user's system settings.
+  color-scheme: light;
+
+  // Set a default background, font and text colors for the application using
+  // Angular Material's system-level CSS variables. Learn more about these
+  // variables at https://material.angular.dev/guide/system-variables
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+
+  // Reset the user agent margin.
+  margin: 0;
+  height: 100%;
+}
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap');
 
 * {
@@ -7,8 +45,8 @@
 }
 
 :root {
-  --neon: #00FF41;
-  --neon-dim: #00FF4166;
+  --neon: #00ff41;
+  --neon-dim: #00ff4166;
   --neon-dark: #0d1a0d;
   --bg: #0a0a0a;
   --danger: #ff4444;
@@ -23,7 +61,10 @@ body {
   min-height: 100vh;
 }
 
-h1, h2, h3, .logo {
+h1,
+h2,
+h3,
+.logo {
   font-family: 'Orbitron', monospace;
 }
 
@@ -66,7 +107,7 @@ button {
   padding: 2px 8px;
   font-size: 10px;
 }
-body[data-theme="light"] {
+body[data-theme='light'] {
   --neon: #1a7a3e;
   --neon-dim: #1a7a3e88;
   --neon-dark: #e8ece8;
@@ -75,7 +116,7 @@ body[data-theme="light"] {
   color: #1a3b24;
 }
 
-body[data-theme="light"] {
+body[data-theme='light'] {
   --neon: #1a1a1a;
   --neon-dim: #1a1a1a99;
   --neon-dark: #f5f5f5;
@@ -84,7 +125,7 @@ body[data-theme="light"] {
   color: #1a1a1a;
 }
 
-body[data-theme="light"] {
+body[data-theme='light'] {
   --neon: #000000;
   --neon-dim: #00000099;
   --neon-dark: #ffffff;
@@ -93,141 +134,141 @@ body[data-theme="light"] {
   color: #000000;
 }
 
-body[data-theme="light"] .dashboard,
-body[data-theme="light"] .scanner-page,
-body[data-theme="light"] .historique-page,
-body[data-theme="light"] .alertes-page,
-body[data-theme="light"] .navbar {
+body[data-theme='light'] .dashboard,
+body[data-theme='light'] .scanner-page,
+body[data-theme='light'] .historique-page,
+body[data-theme='light'] .alertes-page,
+body[data-theme='light'] .navbar {
   background: #ffffff !important;
   color: #000000 !important;
 }
 
-body[data-theme="light"] #matrix-bg,
-body[data-theme="light"] #matrix-canvas,
-body[data-theme="light"] #scanner-matrix,
-body[data-theme="light"] #hist-matrix,
-body[data-theme="light"] #alertes-matrix {
+body[data-theme='light'] #matrix-bg,
+body[data-theme='light'] #matrix-canvas,
+body[data-theme='light'] #scanner-matrix,
+body[data-theme='light'] #hist-matrix,
+body[data-theme='light'] #alertes-matrix {
   opacity: 0.05 !important;
   filter: invert(1);
 }
 
-body[data-theme="light"] .glitch,
-body[data-theme="light"] .page-title,
-body[data-theme="light"] .logo {
+body[data-theme='light'] .glitch,
+body[data-theme='light'] .page-title,
+body[data-theme='light'] .logo {
   color: #000000 !important;
 }
 
-body[data-theme="light"] .logo span {
+body[data-theme='light'] .logo span {
   color: #ffffff !important;
   -webkit-text-stroke: 1px #000000;
 }
 
-body[data-theme="light"] .subtitle,
-body[data-theme="light"] .page-sub,
-body[data-theme="light"] .stat-label,
-body[data-theme="light"] .card-title,
-body[data-theme="light"] .status-text,
-body[data-theme="light"] .nav-links a {
+body[data-theme='light'] .subtitle,
+body[data-theme='light'] .page-sub,
+body[data-theme='light'] .stat-label,
+body[data-theme='light'] .card-title,
+body[data-theme='light'] .status-text,
+body[data-theme='light'] .nav-links a {
   color: #00000099 !important;
 }
 
-body[data-theme="light"] .nav-links a.active,
-body[data-theme="light"] .nav-links a:hover {
+body[data-theme='light'] .nav-links a.active,
+body[data-theme='light'] .nav-links a:hover {
   color: #000000 !important;
 }
 
-body[data-theme="light"] .stat-card,
-body[data-theme="light"] .result-card,
-body[data-theme="light"] .scan-box,
-body[data-theme="light"] .terminal,
-body[data-theme="light"] .scans-table,
-body[data-theme="light"] .alerte-item,
-body[data-theme="light"] .option-card,
-body[data-theme="light"] .scan-status,
-body[data-theme="light"] .scan-progress,
-body[data-theme="light"] .scan-form,
-body[data-theme="light"] .table-header,
-body[data-theme="light"] .table-row {
+body[data-theme='light'] .stat-card,
+body[data-theme='light'] .result-card,
+body[data-theme='light'] .scan-box,
+body[data-theme='light'] .terminal,
+body[data-theme='light'] .scans-table,
+body[data-theme='light'] .alerte-item,
+body[data-theme='light'] .option-card,
+body[data-theme='light'] .scan-status,
+body[data-theme='light'] .scan-progress,
+body[data-theme='light'] .scan-form,
+body[data-theme='light'] .table-header,
+body[data-theme='light'] .table-row {
   background: #ffffff !important;
   border: 1.5px solid #000000 !important;
   border-radius: 0 !important;
 }
 
-body[data-theme="light"] .stat-num {
+body[data-theme='light'] .stat-num {
   color: #000000 !important;
 }
 
-body[data-theme="light"] .stat-card.danger .stat-num,
-body[data-theme="light"] .alerte-stat.danger .stat-num,
-body[data-theme="light"] .badge-danger,
-body[data-theme="light"] .danger-text,
-body[data-theme="light"] .score.danger,
-body[data-theme="light"] .terminal-line.err {
+body[data-theme='light'] .stat-card.danger .stat-num,
+body[data-theme='light'] .alerte-stat.danger .stat-num,
+body[data-theme='light'] .badge-danger,
+body[data-theme='light'] .danger-text,
+body[data-theme='light'] .score.danger,
+body[data-theme='light'] .terminal-line.err {
   color: #cc0000 !important;
   border-color: #cc0000 !important;
 }
 
-body[data-theme="light"] .stat-card.warn .stat-num,
-body[data-theme="light"] .alerte-stat.warn .stat-num,
-body[data-theme="light"] .badge-warn,
-body[data-theme="light"] .warn-text,
-body[data-theme="light"] .score.warn {
+body[data-theme='light'] .stat-card.warn .stat-num,
+body[data-theme='light'] .alerte-stat.warn .stat-num,
+body[data-theme='light'] .badge-warn,
+body[data-theme='light'] .warn-text,
+body[data-theme='light'] .score.warn {
   color: #cc7700 !important;
   border-color: #cc7700 !important;
 }
 
-body[data-theme="light"] .badge-ok,
-body[data-theme="light"] .score.ok,
-body[data-theme="light"] .terminal-line.ok,
-body[data-theme="light"] .step.ok {
+body[data-theme='light'] .badge-ok,
+body[data-theme='light'] .score.ok,
+body[data-theme='light'] .terminal-line.ok,
+body[data-theme='light'] .step.ok {
   color: #007733 !important;
   border-color: #007733 !important;
 }
 
-body[data-theme="light"] .scan-input,
-body[data-theme="light"] .cyber-input,
-body[data-theme="light"] .cyber-select,
-body[data-theme="light"] .scan-input-row input {
+body[data-theme='light'] .scan-input,
+body[data-theme='light'] .cyber-input,
+body[data-theme='light'] .cyber-select,
+body[data-theme='light'] .scan-input-row input {
   background: #ffffff !important;
   color: #000000 !important;
   border: 1.5px solid #000000 !important;
   border-radius: 0 !important;
 }
 
-body[data-theme="light"] .scan-btn,
-body[data-theme="light"] .cyber-btn {
+body[data-theme='light'] .scan-btn,
+body[data-theme='light'] .cyber-btn {
   background: #000000 !important;
   color: #ffffff !important;
   border: 1.5px solid #000000 !important;
   border-radius: 0 !important;
 }
 
-body[data-theme="light"] .scan-btn:hover,
-body[data-theme="light"] .cyber-btn:hover {
+body[data-theme='light'] .scan-btn:hover,
+body[data-theme='light'] .cyber-btn:hover {
   background: #333333 !important;
   box-shadow: none !important;
 }
 
-body[data-theme="light"] .theme-toggle {
+body[data-theme='light'] .theme-toggle {
   border: 1.5px solid #000000 !important;
   color: #000000 !important;
 }
 
-body[data-theme="light"] .status-dot {
+body[data-theme='light'] .status-dot {
   background: #007733 !important;
 }
 
-body[data-theme="light"] .terminal-line.cmd,
-body[data-theme="light"] .domain,
-body[data-theme="light"] .cve-id {
+body[data-theme='light'] .terminal-line.cmd,
+body[data-theme='light'] .domain,
+body[data-theme='light'] .cve-id {
   color: #0044cc !important;
 }
 
-body[data-theme="light"] .cursor,
-body[data-theme="light"] .blink {
+body[data-theme='light'] .cursor,
+body[data-theme='light'] .blink {
   background: #000000 !important;
 }
 
-body[data-theme="light"] .scanline {
+body[data-theme='light'] .scanline {
   display: none !important;
 }
