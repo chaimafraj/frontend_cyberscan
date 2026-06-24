@@ -13,7 +13,7 @@
       <input
         class="cyber-input"
         [(ngModel)]="search"
-        placeholder="Rechercher un domaine... (Enter pour chercher)"
+        placeholder="Rechercher un domaine..."
 
       />
       <select class="cyber-select" [(ngModel)]="filterRisk" (change)="onFilterChange()">
@@ -23,9 +23,9 @@
         <option value="low">FAIBLE</option>
       </select>
 
-      @if (loading) {
-        <button class="refresh-btn" (click)="lancerRecherche()">⟳ Recherche</button>
-      }
+      <button class="refresh-btn" (click)="lancerRecherche()" [disabled]="loading">
+        ⟳ {{ loading ? 'Recherche...' : 'Recherche' }}
+      </button>
     </div>
 
       <div class="scans-table">

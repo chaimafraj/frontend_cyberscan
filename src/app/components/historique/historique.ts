@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
 
 @Component({
   selector: 'app-historique',
@@ -43,11 +43,14 @@ class Historique implements OnInit, OnDestroy {
 
   loadScans(page = 1) {
     this.loading = true;
-    let url = `${this.apiUrl}/scans/?page=${page}&page_size=${this.pageSize}`;
-    if (this.search) url += `&search=${encodeURIComponent(this.search)}`;
-    if (this.filterRisk) url += `&risk=${this.filterRisk.toUpperCase()}`;
+    let params = new HttpParams()
+      .set('page', page)
+      .set('page_size', this.pageSize)
+      .set('search', this.search.trim());
 
-    this.http.get<any>(url).subscribe({
+    if (this.filterRisk) params = params.set('risk', this.filterRisk.toUpperCase());
+
+    this.http.get<any>(`${this.apiUrl}/scans/`, { params }).subscribe({
       next: (data) => {
         const list = Array.isArray(data) ? data : (data.results ?? []);
         this.total = data.total ?? list.length;
