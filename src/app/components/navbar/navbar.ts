@@ -19,8 +19,6 @@ export class Navbar implements OnInit {
     const savedTheme = sessionStorage.getItem('theme') || 'dark';
     this.isDark = savedTheme === 'dark';
     document.body.setAttribute('data-theme', savedTheme);
-
-    this.checkBackend();
   }
 
   toggleTheme() {
@@ -28,17 +26,5 @@ export class Navbar implements OnInit {
     const theme = this.isDark ? 'dark' : 'light';
     sessionStorage.setItem('theme', theme);
     document.body.setAttribute('data-theme', theme);
-  }
-
-  checkBackend() {
-    this.http.get('http://127.0.0.1:8000/api/test/').subscribe({
-      next: () => {
-        this.backendOnline = true;
-      },
-      error: () => {
-        this.backendOnline = false;
-      },
-    });
-    window.open('http://127.0.0.1:8000/api/scans/', '_blank');
   }
 }

@@ -16,7 +16,6 @@
       <button class="theme-toggle" (click)="toggleTheme()">
         {{ isDark ? '☀ LIGHT' : '☾ DARK' }}
       </button>
-      <button class="check-btn" (click)="checkBackend()">⟳ VERIFIER BACKEND</button>
       <div class="nav-status" [ngClass]="{'offline': !backendOnline}">
         <span class="status-dot"></span>
         <span class="status-text">{{ backendOnline ? 'SYSTEM ONLINE' : 'BACKEND OFFLINE' }}</span>
