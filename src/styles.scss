@@ -52,7 +52,7 @@ body {
   --danger: #ff4444;
   --warn: #ffaa00;
   --cyan: #00d4ff;
-  --app-font: 'Times New Roman', Times, serif;
+  --app-font: 'Share Tech Mono', 'Courier New', monospace;
 }
 
 body,
@@ -216,13 +216,14 @@ body[data-theme='light'] {
   --neon: #000000;
   --neon-dim: #263238aa;
   --neon-dark: #f7f9fb;
-  --bg: #bfc3c9;
+  --bg: #edf2f6;
   --danger: #b91c1c;
   --warn: #b45309;
   --cyan: #6d89b3;
-  --surface: color-mix(in srgb, var(--bg) 82%, var(--cyan) 18%);
-  --surface-strong: color-mix(in srgb, var(--bg) 68%, var(--cyan) 32%);
-  --surface-soft: color-mix(in srgb, var(--bg) 90%, white 10%);
+  --app-font: Georgia, 'Times New Roman', Times, serif;
+  --surface: color-mix(in srgb, var(--bg) 90%, var(--cyan) 10%);
+  --surface-strong: color-mix(in srgb, var(--bg) 78%, var(--cyan) 22%);
+  --surface-soft: color-mix(in srgb, var(--bg) 72%, white 28%);
   --step-ok: #111827;
   --step-active: var(--cyan);
   --step-pending: rgba(17, 24, 39, 0.42);
@@ -253,7 +254,7 @@ body[data-theme='light'] .navbar {
   background: var(--cyan) !important;
   border-bottom-color: var(--cyan) !important;
   color: #ffffff !important;
-  box-shadow: 0 1px 14px rgba(17, 24, 39, 0.18);
+  box-shadow: 0 1px 14px rgba(17, 24, 39, 0.14);
 }
 
 body[data-theme='light'] #matrix-bg,
@@ -261,7 +262,7 @@ body[data-theme='light'] #matrix-canvas,
 body[data-theme='light'] #scanner-matrix,
 body[data-theme='light'] #hist-matrix,
 body[data-theme='light'] #alertes-matrix {
-  opacity: 0.035 !important;
+  opacity: 0.02 !important;
   filter: invert(1) hue-rotate(165deg) saturate(0.8);
 }
 
