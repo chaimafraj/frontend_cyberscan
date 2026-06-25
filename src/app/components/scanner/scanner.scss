@@ -222,9 +222,9 @@
 }
 
 .step { font-size: 11px; letter-spacing: 1px; padding: 4px 0; }
-.step.ok     { color: #00FF41; }
-.step.active { color: #ffaa00; animation: blink 1s infinite; }
-.step.pending { color: #00FF4133; }
+.step.ok     { color: var(--step-ok, #00FF41); }
+.step.active { color: var(--step-active, #ffaa00); animation: blink 1s infinite; }
+.step.pending { color: var(--step-pending, #00FF4133); }
 
 .results-grid {
   display: grid;

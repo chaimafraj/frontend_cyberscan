@@ -52,12 +52,20 @@ body {
   --danger: #ff4444;
   --warn: #ffaa00;
   --cyan: #00d4ff;
+  --app-font: 'Times New Roman', Times, serif;
+}
+
+body,
+body * {
+  font-family: var(--app-font) !important;
 }
 
 body {
   background: var(--bg);
   color: var(--neon);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--app-font);
+  font-size: 17px;
+  line-height: 1.45;
   min-height: 100vh;
 }
 
@@ -65,7 +73,7 @@ h1,
 h2,
 h3,
 .logo {
-  font-family: 'Orbitron', monospace;
+  font-family: var(--app-font);
 }
 
 a {
@@ -75,7 +83,86 @@ a {
 
 button {
   cursor: pointer;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: var(--app-font);
+}
+
+input,
+select,
+textarea,
+table,
+.mat-mdc-table,
+.mat-mdc-paginator {
+  font-family: var(--app-font) !important;
+}
+
+.glitch {
+  font-size: 42px !important;
+}
+
+.page-title {
+  font-size: 32px !important;
+}
+
+.logo {
+  font-size: 22px !important;
+}
+
+.subtitle,
+.page-sub {
+  font-size: 16px !important;
+}
+
+.nav-links a,
+.status-text,
+.theme-toggle,
+.check-btn,
+.card-title,
+.stat-label,
+.terminal-header,
+.input-group label,
+.option-card label,
+.page-info {
+  font-size: 14px !important;
+}
+
+.stat-num {
+  font-size: 40px !important;
+}
+
+.terminal-line,
+.scan-item,
+.proto-row,
+.detail-row,
+.step,
+.alerte-title,
+.alerte-msg,
+.domain,
+.date,
+.proto,
+.score,
+.cyber-table .mat-mdc-cell,
+.cyber-table .mat-mdc-header-cell {
+  font-size: 16px !important;
+}
+
+.cyber-input,
+.cyber-select,
+.scan-input,
+.edit-input,
+.cyber-btn,
+.scan-btn,
+.refresh-btn,
+.modal-btn,
+.action-btn {
+  font-size: 16px !important;
+}
+
+.badge,
+.badge-ok,
+.badge-warn,
+.badge-danger,
+.alerte-badge {
+  font-size: 13px !important;
 }
 
 ::-webkit-scrollbar {
@@ -118,6 +205,9 @@ body[data-theme='light'] {
   --surface: color-mix(in srgb, var(--bg) 82%, var(--cyan) 18%);
   --surface-strong: color-mix(in srgb, var(--bg) 68%, var(--cyan) 32%);
   --surface-soft: color-mix(in srgb, var(--bg) 90%, white 10%);
+  --step-ok: #111827;
+  --step-active: var(--cyan);
+  --step-pending: rgba(17, 24, 39, 0.42);
   color-scheme: light;
   background: var(--bg);
   color: #111827;
@@ -236,6 +326,68 @@ body[data-theme='light'] .table-row {
   box-shadow: 0 1px 6px rgba(109, 137, 179, 0.18) !important;
 }
 
+body[data-theme='light'] :where(
+  .nav-content > *,
+  .page-header,
+  .stat-card,
+  .recent-scans,
+  .quick-actions,
+  .scan-form,
+  .option-card,
+  .scan-status,
+  .result-card,
+  .terminal,
+  .scans-table,
+  .alerte-stat,
+  .alerte-item,
+  .action-card,
+  .modal-box,
+  .proto-modal-box
+) {
+  animation: light-element-rise 0.55s ease both;
+}
+
+body[data-theme='light'] :where(
+  .stat-card,
+  .result-card,
+  .scan-box,
+  .terminal,
+  .scans-table,
+  .alerte-item,
+  .alerte-stat,
+  .option-card,
+  .scan-status,
+  .scan-form,
+  .recent-scans,
+  .quick-actions,
+  .action-card,
+  .cyber-table .mat-mdc-row
+) {
+  transition:
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease !important;
+}
+
+body[data-theme='light'] :where(
+  .stat-card,
+  .result-card,
+  .scan-box,
+  .terminal,
+  .alerte-stat,
+  .option-card,
+  .action-card
+):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(109, 137, 179, 0.24) !important;
+}
+
+body[data-theme='light'] .alerte-item:hover,
+body[data-theme='light'] .cyber-table .mat-mdc-row:hover {
+  transform: translateX(3px);
+}
+
 body[data-theme='light'] .stat-card::before,
 body[data-theme='light'] .alerte-stat::after {
   background: linear-gradient(90deg, transparent, var(--cyan), transparent) !important;
@@ -263,7 +415,6 @@ body[data-theme='light'] .alerte-stat.warn .stat-num,
 body[data-theme='light'] .badge-warn,
 body[data-theme='light'] .warn-text,
 body[data-theme='light'] .score.warn,
-body[data-theme='light'] .step.active,
 body[data-theme='light'] .alerte-item.warn .alerte-icon,
 body[data-theme='light'] .alerte-item.warn .alerte-title,
 body[data-theme='light'] .alerte-badge.warn {
@@ -274,13 +425,24 @@ body[data-theme='light'] .alerte-badge.warn {
 body[data-theme='light'] .badge-ok,
 body[data-theme='light'] .score.ok,
 body[data-theme='light'] .terminal-line.ok,
-body[data-theme='light'] .step.ok,
 body[data-theme='light'] .ok-text,
 body[data-theme='light'] .alerte-stat.ok .stat-num,
 body[data-theme='light'] .alerte-item.ok .alerte-icon,
 body[data-theme='light'] .alerte-badge.ok {
   color: #111827 !important;
   border-color: #111827 !important;
+}
+
+body[data-theme='light'] .step.ok {
+  color: var(--step-ok) !important;
+}
+
+body[data-theme='light'] .step.active {
+  color: var(--step-active) !important;
+}
+
+body[data-theme='light'] .step.pending {
+  color: var(--step-pending) !important;
 }
 
 body[data-theme='light'] .scan-input,
@@ -370,6 +532,17 @@ body[data-theme='light'] .check-btn:hover::after {
   }
   to {
     transform: translateX(120%);
+  }
+}
+
+@keyframes light-element-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
