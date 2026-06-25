@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -31,16 +31,35 @@ export class Dashboard implements OnInit {
   }
 
   loadStats() {
-    this.http.get<any[]>(`${this.apiUrl}/scans/`).subscribe({
-      next: (scans) => {
-        this.totalScans = scans.length;
+    const params = new HttpParams().set('page_size', 1000);
+
+    this.http.get<any>(`${this.apiUrl}/scans/`, { params }).subscribe({
+      next: (data) => {
+        const scans = Array.isArray(data) ? data : (data.results ?? []);
+
+        this.totalScans = data.total ?? data.count ?? scans.length;
         this.critiques = scans.filter((s) => s.score_risque_ia >= 7).length;
         this.moyennes = scans.filter((s) => s.score_risque_ia >= 4 && s.score_risque_ia < 7).length;
-        this.totalCve = scans.reduce((sum, s) => sum + (s.cves?.length || 0), 0);
+        this.totalCve = scans.reduce((sum, scan) => sum + this.countScanCves(scan), 0);
         this.recentScans = scans.slice(0, 5);
         this.cdr.detectChanges();
       },
-      error: () => {},
+      error: () => {
+        this.critiques = 0;
+        this.moyennes = 0;
+        this.totalScans = 0;
+        this.totalCve = 0;
+        this.recentScans = [];
+        this.cdr.detectChanges();
+      },
     });
+  }
+
+  private countScanCves(scan: any): number {
+    const cves = scan.cves ?? scan.cve ?? scan.resultats_ssl?.cves ?? scan.resultats_ssl?.vulnerabilities ?? scan.vulnerabilities;
+
+    if (Array.isArray(cves)) return cves.length;
+    if (cves && typeof cves === 'object') return Object.keys(cves).length;
+    return 0;
   }
 }
