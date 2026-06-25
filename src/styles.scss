@@ -111,7 +111,7 @@ body[data-theme='light'] {
   --neon: #000000;
   --neon-dim: #263238aa;
   --neon-dark: #f7f9fb;
-  --bg: #bfc3c9;
+  --bg: #e0e6ec;
   --danger: #b91c1c;
   --warn: #b45309;
   --cyan: #6d89b3;
@@ -161,7 +161,7 @@ body[data-theme='light'] .scanline {
 body[data-theme='light'] .glitch,
 body[data-theme='light'] .page-title,
 body[data-theme='light'] .logo {
-  color: #111827 !important;
+  color: var(--cyan) !important;
   text-shadow: none !important;
   animation: light-title-pulse 3.6s ease-in-out infinite !important;
 }
@@ -338,11 +338,11 @@ body[data-theme='light'] .check-btn:hover::after {
 
 @keyframes light-title-pulse {
   0%, 100% {
-    color: #111827;
+    color: var(--cyan);
     text-shadow: 0 0 0 rgba(109, 137, 179, 0);
   }
   50% {
-    color: #233348;
+    color: #58739d;
     text-shadow: 0 0 14px rgba(109, 137, 179, 0.34);
   }
 }
