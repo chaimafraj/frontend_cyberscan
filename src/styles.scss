@@ -64,7 +64,7 @@ body {
   background: var(--bg);
   color: var(--neon);
   font-family: var(--app-font);
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.45;
   min-height: 100vh;
 }
@@ -96,65 +96,83 @@ table,
 }
 
 .glitch {
-  font-size: 42px !important;
+  font-size: 46px !important;
 }
 
 .page-title {
-  font-size: 32px !important;
+  font-size: 36px !important;
 }
 
 .logo {
-  font-size: 22px !important;
+  font-size: 26px !important;
 }
 
 .subtitle,
 .page-sub {
-  font-size: 16px !important;
+  font-size: 18px !important;
 }
 
 .nav-links a,
 .status-text,
 .theme-toggle,
 .check-btn,
-.card-title,
 .stat-label,
-.terminal-header,
 .input-group label,
 .option-card label,
 .page-info {
-  font-size: 14px !important;
+  font-size: 15px !important;
+}
+
+.card-title,
+.terminal-header {
+  font-size: 17px !important;
 }
 
 .stat-num {
-  font-size: 40px !important;
+  font-size: 44px !important;
 }
 
-.terminal-line,
 .scan-item,
 .proto-row,
 .detail-row,
-.step,
-.alerte-title,
-.alerte-msg,
-.domain,
+.terminal-line,
+.cyber-table .mat-mdc-cell {
+  font-size: 18px !important;
+}
+
+.cyber-table .mat-mdc-header-cell {
+  font-size: 15px !important;
+}
+
+.domain {
+  font-size: 19px !important;
+}
+
 .date,
 .proto,
-.score,
-.cyber-table .mat-mdc-cell,
-.cyber-table .mat-mdc-header-cell {
+.step,
+.alerte-msg {
   font-size: 16px !important;
+}
+
+.score,
+.alerte-title {
+  font-size: 20px !important;
 }
 
 .cyber-input,
 .cyber-select,
 .scan-input,
 .edit-input,
+.modal-btn {
+  font-size: 18px !important;
+}
+
 .cyber-btn,
 .scan-btn,
 .refresh-btn,
-.modal-btn,
 .action-btn {
-  font-size: 16px !important;
+  font-size: 17px !important;
 }
 
 .badge,
@@ -162,7 +180,7 @@ table,
 .badge-warn,
 .badge-danger,
 .alerte-badge {
-  font-size: 13px !important;
+  font-size: 14px !important;
 }
 
 ::-webkit-scrollbar {
@@ -326,68 +344,6 @@ body[data-theme='light'] .table-row {
   box-shadow: 0 1px 6px rgba(109, 137, 179, 0.18) !important;
 }
 
-body[data-theme='light'] :where(
-  .nav-content > *,
-  .page-header,
-  .stat-card,
-  .recent-scans,
-  .quick-actions,
-  .scan-form,
-  .option-card,
-  .scan-status,
-  .result-card,
-  .terminal,
-  .scans-table,
-  .alerte-stat,
-  .alerte-item,
-  .action-card,
-  .modal-box,
-  .proto-modal-box
-) {
-  animation: light-element-rise 0.55s ease both;
-}
-
-body[data-theme='light'] :where(
-  .stat-card,
-  .result-card,
-  .scan-box,
-  .terminal,
-  .scans-table,
-  .alerte-item,
-  .alerte-stat,
-  .option-card,
-  .scan-status,
-  .scan-form,
-  .recent-scans,
-  .quick-actions,
-  .action-card,
-  .cyber-table .mat-mdc-row
-) {
-  transition:
-    background 0.22s ease,
-    border-color 0.22s ease,
-    box-shadow 0.22s ease,
-    transform 0.22s ease !important;
-}
-
-body[data-theme='light'] :where(
-  .stat-card,
-  .result-card,
-  .scan-box,
-  .terminal,
-  .alerte-stat,
-  .option-card,
-  .action-card
-):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(109, 137, 179, 0.24) !important;
-}
-
-body[data-theme='light'] .alerte-item:hover,
-body[data-theme='light'] .cyber-table .mat-mdc-row:hover {
-  transform: translateX(3px);
-}
-
 body[data-theme='light'] .stat-card::before,
 body[data-theme='light'] .alerte-stat::after {
   background: linear-gradient(90deg, transparent, var(--cyan), transparent) !important;
@@ -532,17 +488,6 @@ body[data-theme='light'] .check-btn:hover::after {
   }
   to {
     transform: translateX(120%);
-  }
-}
-
-@keyframes light-element-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
