@@ -30,8 +30,8 @@ export class ClientService {
     return this.http.get<ClientsResponse>(`${this.apiUrl}/?page=${page}&page_size=${pageSize}`);
   }
 
-  createClient(nom: string, email: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/`, { nom, email });
+  createClient(nom: string, username: string, email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/`, { nom, username, email });
   }
 
   deleteClient(id: number): Observable<any> {

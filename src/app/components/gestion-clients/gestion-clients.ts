@@ -71,11 +71,13 @@ export class GestionClients implements OnInit {
     this.successMessage = '';
   }
 
+  newUsername = '';
+
   createClient() {
     this.addError = '';
 
-    if (!this.newNom || !this.newEmail) {
-      this.addError = 'Nom et email requis';
+    if (!this.newNom || !this.newUsername || !this.newEmail) {
+      this.addError = "Nom, nom d'utilisateur et email requis";
       this.cdr.detectChanges();
       return;
     }
@@ -83,11 +85,12 @@ export class GestionClients implements OnInit {
     this.addLoading = true;
     this.cdr.detectChanges();
 
-    this.clientService.createClient(this.newNom, this.newEmail).subscribe({
+    this.clientService.createClient(this.newNom, this.newUsername, this.newEmail).subscribe({
       next: () => {
         this.addLoading = false;
         this.successMessage = `Client "${this.newNom}" créé — email envoyé.`;
         this.newNom = '';
+        this.newUsername = '';
         this.newEmail = '';
         this.showAddForm = false;
         this.currentPage = 1;
@@ -102,10 +105,6 @@ export class GestionClients implements OnInit {
   }
 
   deleteClient(client: Client) {
-    if (!confirm(`Supprimer le client "${client.nom}" ? Cette action est irréversible.`)) {
-      return;
-    }
-
     this.clientService.deleteClient(client.id).subscribe({
       next: () => {
         this.successMessage = `Client "${client.nom}" supprimé.`;
