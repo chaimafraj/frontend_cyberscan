@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http';
+import { ScannerService } from '../../services/scanner.service'; // 🆕 Import el service mte3ik s7i7!
 
 @Component({
   selector: 'app-scanner',
@@ -18,7 +19,6 @@ export class Scanner implements OnInit, OnDestroy {
   scanResult: any = null;
   errorMsg = '';
   private matrixInterval: any;
-  private apiUrl = 'http://127.0.0.1:8000/api';
 
   options = [
     { id: 'sslscan', label: 'SSLSCAN', checked: true },
@@ -27,8 +27,9 @@ export class Scanner implements OnInit, OnDestroy {
     { id: 'ssllabs', label: 'SSL LABS API', checked: false },
   ];
 
+  // 🆕 Injecti el ScannerService hna (na3mlo remove lil HttpClient mel component direct)
   constructor(
-    private http: HttpClient,
+    private scannerService: ScannerService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -46,20 +47,28 @@ export class Scanner implements OnInit, OnDestroy {
     this.scanResult = null;
     this.errorMsg = '';
 
-    this.http.post<any>(`${this.apiUrl}/scans/`, { url: this.targetUrl }).subscribe({
+    this.scannerService.demarrerScan(this.targetUrl).subscribe({
       next: (result) => {
         this.scanning = false;
-        this.scanResult = result;
+
+        // 🟢 Extraction s7i7a mta3 el rapport global khater Django wraps it in 'rapport'
+        if (result && result.rapport && result.rapport.length > 0) {
+          this.scanResult = result.rapport[0]; // Na9raw el site results direkt kima y7eb el html
+        } else {
+          this.scanResult = result; // Fallback filter
+        }
+
+        console.log('Rapport CYBERSCAN chargé avec succès:', this.scanResult);
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
         this.scanning = false;
+        console.error('Erreur scan:', err);
         this.errorMsg = 'Erreur lors du scan. Vérifiez la connexion VM/SSH.';
         this.cdr.detectChanges();
-      }
+      },
     });
   }
-
   startMatrix() {
     setTimeout(() => {
       const canvas = document.getElementById('scanner-matrix') as HTMLCanvasElement;
@@ -75,7 +84,7 @@ export class Scanner implements OnInit, OnDestroy {
         ctx.fillStyle = '#00FF41';
         ctx.font = '13px monospace';
         drops.forEach((y, i) => {
-          const ch = String.fromCharCode(0x30A0 + Math.random() * 96);
+          const ch = String.fromCharCode(0x30a0 + Math.random() * 96);
           ctx.fillText(ch, i * 14, y * 14);
           if (y * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
           drops[i]++;

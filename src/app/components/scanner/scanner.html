@@ -56,25 +56,27 @@
     </div>
 
     <div class="results-grid" *ngIf="scanResult">
+
       <div class="result-card">
-        <div class="card-title">▸ PROTOCOLES DÉTECTÉS — {{ scanResult.domaine }}</div>
-        <div class="proto-row" *ngFor="let proto of scanResult.protocols">
-          <span>{{ proto.name }}</span>
-          <span class="badge-ok" *ngIf="proto.status === 'secure'">SECURE</span>
-          <span class="badge-warn" *ngIf="proto.status === 'obsolete'">OBSOLÈTE</span>
-          <span class="badge-danger" *ngIf="proto.status === 'vulnerable'">VULNÉRABLE</span>
+        <div class="card-title">▸ PROTOCOLES DÉTECTÉS — {{ scanResult?.domaine }}</div>
+        <div class="proto-row" *ngFor="let proto of scanResult?.protocols">
+          <span>{{ proto?.name }}</span>
+          <span class="badge-ok" *ngIf="proto?.status === 'secure'">SECURE</span>
+          <span class="badge-warn" *ngIf="proto?.status === 'obsolete'">OBSOLÈTE</span>
+          <span class="badge-danger" *ngIf="proto?.status === 'vulnerable'">VULNÉRABLE</span>
         </div>
+
         <div class="risk-bar">
           <div class="risk-label">
             <span>SCORE DE RISQUE IA</span>
-            <span [class]="scanResult.score_risque_ia >= 7 ? 'danger-text' : scanResult.score_risque_ia >= 4 ? 'warn-text' : 'ok-text'">
-              {{ scanResult.score_risque_ia }}/10
+            <span [class]="scanResult?.score_risque_ia >= 7 ? 'danger-text' : scanResult?.score_risque_ia >= 4 ? 'warn-text' : 'ok-text'">
+              {{ scanResult?.score_risque_ia ?? 0 }}/10
             </span>
           </div>
           <div class="risk-track">
             <div class="risk-fill"
-                 [style.width.%]="scanResult.score_risque_ia * 10"
-                 [style.background]="scanResult.score_risque_ia >= 7 ? '#ff4444' : scanResult.score_risque_ia >= 4 ? '#ffaa00' : '#00FF41'">
+                 [style.width.%]="(scanResult?.score_risque_ia ?? 0) * 10"
+                 [style.background]="scanResult?.score_risque_ia >= 7 ? '#ff4444' : scanResult?.score_risque_ia >= 4 ? '#ffaa00' : '#00FF41'">
             </div>
           </div>
         </div>
@@ -82,10 +84,12 @@
 
       <div class="result-card">
         <div class="card-title">▸ VULNÉRABILITÉS DÉTECTÉES</div>
-        <div class="vuln-item" *ngFor="let vuln of scanResult.vulnerabilities">
+
+        <div class="vuln-item" *ngFor="let vuln of scanResult?.vulnerabilities">
           <span class="badge-danger">⚠ {{ vuln }}</span>
         </div>
-        <div class="no-vuln" *ngIf="scanResult.vulnerabilities.length === 0">
+
+        <div class="no-vuln" *ngIf="!scanResult?.vulnerabilities || scanResult?.vulnerabilities?.length === 0">
           <span class="badge-ok">✓ AUCUNE VULNÉRABILITÉ CRITIQUE</span>
         </div>
       </div>
@@ -93,12 +97,13 @@
 
     <div class="terminal" *ngIf="scanResult">
       <div class="terminal-header">▸ TERMINAL OUTPUT</div>
-      <div class="terminal-line cmd">&gt; sslscan {{ scanResult.domaine }}</div>
-      <div class="terminal-line ok">[✓] Scan terminé — Score: {{ scanResult.score_risque_ia }}/10</div>
-      <div class="terminal-line err" *ngIf="scanResult.vulnerabilities.length > 0">
-        [!] {{ scanResult.vulnerabilities.length }} vulnérabilité(s) détectée(s)
+      <div class="terminal-line cmd">&gt; sslscan {{ scanResult?.domaine }}</div>
+      <div class="terminal-line ok">[✓] Scan terminé — Score: {{ scanResult?.score_risque_ia ?? 0 }}/10</div>
+
+      <div class="terminal-line err" *ngIf="scanResult?.vulnerabilities?.length > 0">
+        [!] {{ scanResult?.vulnerabilities?.length }} vulnérabilité(s) détectée(s)
       </div>
-      <div class="terminal-line ok" *ngIf="scanResult.vulnerabilities.length === 0">
+      <div class="terminal-line ok" *ngIf="!scanResult?.vulnerabilities || scanResult?.vulnerabilities?.length === 0">
         [✓] Aucune vulnérabilité critique détectée
       </div>
       <div class="terminal-line"><span class="cursor"></span></div>

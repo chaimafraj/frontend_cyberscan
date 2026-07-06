@@ -158,13 +158,14 @@
             <span class="label">NIVEAU DE RISQUE:</span>
             <span class="value danger">{{ selectedProtocol.risque }}</span>
           </div>
-          <div class="detail-row">
-            <span class="label">SOLUTION:</span>
-            <span class="value">{{ selectedProtocol.solution }}</span>
+
+          <!-- 💡 هنا تم تعديل وعرض الحل الذكي القادم من الـ AI بالفرنسية -->
+          <div class="detail-row ai-box" style="margin-top: 15px; background: rgba(0, 123, 255, 0.1); padding: 12px; border-left: 4px solid #007bff; border-radius: 4px;">
+            <span class="label" style="color: #007bff; display: block; margin-bottom: 5px; font-weight: bold;">💡 RECOMMANDATION IA (Flan-T5) :</span>
+            <span class="value" style="white-space: pre-line; color: #fff;">{{ selectedProtocol.recommandation_ia || 'Génération de la solution en cours...' }}</span>
           </div>
         </div>
       </div>
     </div>
   }
-
 </div>

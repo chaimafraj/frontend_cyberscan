@@ -1,13 +1,13 @@
 import { Component, OnInit, OnDestroy, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 
 @Component({
   selector: 'app-historique',
-  imports: [FormsModule, CommonModule, HttpClientModule, MatTableModule, MatPaginatorModule],
+  imports: [FormsModule, CommonModule, MatTableModule, MatPaginatorModule],
   templateUrl: './historique.html',
   styleUrl: './historique.scss',
   standalone: true,
@@ -25,7 +25,6 @@ class Historique implements OnInit, OnDestroy {
   editDomaine = '';
   loading = false;
 
-  // Pagination
   currentPage = 1;
   pageSize = 10;
   totalPages = 1;
@@ -34,9 +33,7 @@ class Historique implements OnInit, OnDestroy {
   private matrixInterval: any;
   private apiUrl = 'http://127.0.0.1:8000/api';
 
-  constructor(
-    private http: HttpClient
-  ) {}
+  constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.startMatrix();
@@ -87,22 +84,26 @@ class Historique implements OnInit, OnDestroy {
     this.loadScans(1);
   }
 
-
   onPageChange(event: PageEvent) {
     this.pageSize = event.pageSize;
     this.currentPage = event.pageIndex + 1;
     this.loadScans(this.currentPage);
   }
 
-
   viewScan(scan: any) {
     this.selectedScan = scan;
-    this.editMode = false;
+    if (scan.score_risque_ia >= 7) {
+      this.selectedScan.riskClass = 'risk-high';
+    } else if (scan.score_risque_ia >= 4) {
+      this.selectedScan.riskClass = 'risk-medium';
+    } else {
+      this.selectedScan.riskClass = 'risk-low';
+    }
   }
 
   closeModal() {
     this.selectedScan = null;
-    this.editMode = false;
+    this.selectedProtocol = null;
   }
 
   deleteScan(scan: any, event: Event) {
@@ -146,11 +147,31 @@ class Historique implements OnInit, OnDestroy {
         solution: 'Configuration optimale.',
       },
     };
-    this.selectedProtocol = info[protocol.name] ?? {
+
+    const baseInfo = info[protocol.name] ?? {
       titre: protocol.name,
       description: 'Protocole détecté.',
       risque: protocol.status,
       solution: 'Consulter la documentation.',
+    };
+
+    let aiSolution = '';
+
+    if (this.selectedScan && this.selectedScan.cves) {
+      const matchingCve = this.selectedScan.cves.find(
+        (c: any) =>
+          (protocol.name === 'TLSv1.0' && c.cve_id === 'CVE-2014-3566') ||
+          (protocol.name === 'WEAK_CIPHER' && c.cve_id === 'CVE-2016-2183'),
+      );
+
+      if (matchingCve && matchingCve.recommandation_ia) {
+        aiSolution = matchingCve.recommandation_ia;
+      }
+    }
+
+    this.selectedProtocol = {
+      ...baseInfo,
+      recommandation_ia: aiSolution || baseInfo.solution,
     };
   }
 

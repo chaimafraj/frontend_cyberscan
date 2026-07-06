@@ -1,8 +1,10 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { ScannerService } from '../../services/scanner.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,58 +20,50 @@ export class Dashboard implements OnInit, OnDestroy {
   totalScans = 0;
   totalCve = 0;
   recentScans: any[] = [];
+  userRole: string = '';
 
   private matrixInterval: any;
-  private apiUrl = 'http://127.0.0.1:8000/api';
 
   constructor(
-    private http: HttpClient,
+    private scannerService: ScannerService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
+    this.userRole = this.authService.getUserRole();
+    this.loadDashboardData();
     this.startMatrix();
-    this.loadStats();
   }
 
-  ngOnDestroy() {
-    if (this.matrixInterval) clearInterval(this.matrixInterval);
-  }
-
-  loadStats() {
-    const params = new HttpParams().set('page_size', '1000');
-
-    this.http.get<any>(`${this.apiUrl}/scans/`, { params }).subscribe({
+  loadDashboardData() {
+    this.scannerService.getDashboardStats().subscribe({
       next: (data) => {
-        const scans = this.normalizeScans(data);
+        console.log('Data reçue du Backend Django:', data); // Pour debug fil console tab
 
-        this.totalScans = Array.isArray(data) ? scans.length : (data?.total ?? data?.count ?? scans.length);
-        this.critiques = scans.filter((s) => s.score_risque_ia >= 7).length;
-        this.moyennes = scans.filter((s) => s.score_risque_ia >= 4 && s.score_risque_ia < 7).length;
-        this.totalCve = scans.reduce((sum, scan) => sum + this.countScanCves(scan), 0);
-        this.recentScans = scans.slice(0, 5);
+        // 🟢 Mapping sécurisé 100% m3a backend structures
+        this.totalScans = data.total_scans ?? 0;
+        this.critiques = data.critical_count ?? 0;
+        this.moyennes = data.medium_count ?? 0;
+
+        // ✨ FIX: Fallback dynamic bch ya9ra total_recommandations walla total_cve dynamic
+        this.totalCve = data.total_recommandations ?? data.total_cve ?? 0;
+
+        this.recentScans = data.recent_scans ?? [];
+
+        // Force refresh UI direct
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        console.error('Erreur lors du chargement des statistiques CYBERSCAN', err);
         this.resetStats();
         this.cdr.detectChanges();
       },
     });
   }
 
-  private normalizeScans(data: any): any[] {
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.results)) return data.results;
-    if (Array.isArray(data?.scans)) return data.scans;
-    return [];
-  }
-
-  private countScanCves(scan: any): number {
-    const cves = scan.cves ?? scan.cve ?? scan.resultats_ssl?.cves ?? scan.resultats_ssl?.vulnerabilities ?? scan.vulnerabilities;
-
-    if (Array.isArray(cves)) return cves.length;
-    if (cves && typeof cves === 'object') return Object.keys(cves).length;
-    return 0;
+  ngOnDestroy() {
+    if (this.matrixInterval) clearInterval(this.matrixInterval);
   }
 
   private resetStats() {

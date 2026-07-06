@@ -146,3 +146,58 @@
   border-color: #00FF41;
   background: #00FF4111;
 }
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-name {
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.user-role {
+  font-size: 9px;
+  padding: 2px 8px;
+  letter-spacing: 1px;
+  border: 1px solid;
+}
+
+.badge-admin {
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+.badge-analyst {
+  border-color: #ffaa00;
+  color: #ffaa00;
+}
+
+.badge-viewer {
+  border-color: #00FF41;
+  color: #00FF41;
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid #ff444444;
+  color: #ff4444;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 4px 12px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: #ff444415;
+  border-color: #ff4444;
+  box-shadow: 0 0 8px #ff444433;
+}

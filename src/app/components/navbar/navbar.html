@@ -10,15 +10,29 @@
       <li><a routerLink="/scanner" routerLinkActive="active">SCANNER</a></li>
       <li><a routerLink="/historique" routerLinkActive="active">HISTORIQUE</a></li>
       <li><a routerLink="/alertes" routerLinkActive="active">ALERTES</a></li>
+      <li *ngIf="currentUser?.role === 'admin'">
+        <a routerLink="/clients" routerLinkActive="active">CLIENTS</a>
+      </li>
     </ul>
 
     <div class="nav-right">
       <button class="theme-toggle" (click)="toggleTheme()">
         {{ isDark ? '☀ LIGHT' : '☾ DARK' }}
       </button>
-      <div class="nav-status" [ngClass]="{'offline': !backendOnline}">
+
+      <div class="user-info" *ngIf="currentUser">
+        <span class="user-role badge-{{ currentUser.role }}">
+          {{ currentUser.role | uppercase }}
+        </span>
+        <a routerLink="/profile" class="user-name" title="Voir mon profil">
+          {{ currentUser.username }}
+        </a>
+        <button class="logout-btn" (click)="logout()">⏻ LOGOUT</button>
+      </div>
+
+      <div class="nav-status">
         <span class="status-dot"></span>
-        <span class="status-text">{{ backendOnline ? 'SYSTEM ONLINE' : 'BACKEND OFFLINE' }}</span>
+        <span class="status-text">SYSTEM ONLINE</span>
       </div>
     </div>
   </div>
