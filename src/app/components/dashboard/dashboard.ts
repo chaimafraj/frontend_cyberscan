@@ -1,14 +1,13 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ScannerService } from '../../services/scanner.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule, CommonModule, HttpClientModule, RouterLink],
+  imports: [FormsModule, CommonModule, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   standalone: true,
@@ -39,19 +38,14 @@ export class Dashboard implements OnInit, OnDestroy {
   loadDashboardData() {
     this.scannerService.getDashboardStats().subscribe({
       next: (data) => {
-        console.log('Data reçue du Backend Django:', data); // Pour debug fil console tab
+        console.log('Data reçue du Backend Django:', data);
 
-        // 🟢 Mapping sécurisé 100% m3a backend structures
         this.totalScans = data.total_scans ?? 0;
         this.critiques = data.critical_count ?? 0;
         this.moyennes = data.medium_count ?? 0;
-
-        // ✨ FIX: Fallback dynamic bch ya9ra total_recommandations walla total_cve dynamic
         this.totalCve = data.total_recommandations ?? data.total_cve ?? 0;
-
         this.recentScans = data.recent_scans ?? [];
 
-        // Force refresh UI direct
         this.cdr.detectChanges();
       },
       error: (err) => {
