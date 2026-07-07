@@ -30,6 +30,11 @@
 
       <div class="scans-table">
         <table mat-table [dataSource]="dataSource" class="cyber-table">
+          <ng-container matColumnDef="client">
+            <th mat-header-cell *matHeaderCellDef>CLIENT</th>
+            <td mat-cell *matCellDef="let scan" class="client-col">{{ scan.client_nom }}</td>
+          </ng-container>
+
           <ng-container matColumnDef="domaine">
             <th mat-header-cell *matHeaderCellDef>DOMAINE</th>
             <td mat-cell *matCellDef="let scan" class="domain">{{ scan.domaine }}</td>

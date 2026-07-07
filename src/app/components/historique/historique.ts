@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-historique',
@@ -18,7 +19,8 @@ class Historique implements OnInit, OnDestroy {
   filterRisk = '';
   scans: any[] = [];
   dataSource = new MatTableDataSource<any>([]);
-  displayedColumns = ['domaine', 'date', 'protocols', 'score', 'statut', 'actions'];
+  displayedColumns: string[] = [];
+  isAdmin = false;
   selectedScan: any = null;
   selectedProtocol: any = null;
   editMode = false;
@@ -33,9 +35,16 @@ class Historique implements OnInit, OnDestroy {
   private matrixInterval: any;
   private apiUrl = 'http://127.0.0.1:8000/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+  ) {}
 
   ngOnInit() {
+    this.isAdmin = this.authService.getUserRole() === 'admin';
+    this.displayedColumns = this.isAdmin
+      ? ['client', 'domaine', 'date', 'protocols', 'score', 'statut', 'actions']
+      : ['domaine', 'date', 'protocols', 'score', 'statut', 'actions'];
     this.startMatrix();
     this.loadScans();
   }
@@ -108,7 +117,6 @@ class Historique implements OnInit, OnDestroy {
 
   deleteScan(scan: any, event: Event) {
     event.stopPropagation();
-    if (!confirm(`Supprimer le scan de "${scan.domaine}" ?`)) return;
     this.http.delete(`${this.apiUrl}/scans/${scan.id}/`).subscribe({
       next: () => {
         this.scans = this.scans.filter((s) => s.id !== scan.id);

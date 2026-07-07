@@ -65,7 +65,7 @@
       <p class="empty-msg">Aucun client enregistré.</p>
     </ng-template>
 
-    <div class="pagination" *ngIf="totalPages > 1">
+    <div class="pagination">
       <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹ Précédent</button>
       <span>Page {{ currentPage }} / {{ totalPages }} ({{ totalCount }} clients)</span>
       <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">Suivant ›</button>
