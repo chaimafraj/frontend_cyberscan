@@ -5,10 +5,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { AuthService } from '../../services/auth.service';
+import { VulnManuelleForm } from '../vuln-manuelle-form/vuln-manuelle-form';
 
 @Component({
   selector: 'app-historique',
-  imports: [FormsModule, CommonModule, MatTableModule, MatPaginatorModule],
+  imports: [FormsModule, CommonModule, MatTableModule, MatPaginatorModule, VulnManuelleForm],
   templateUrl: './historique.html',
   styleUrl: './historique.scss',
   standalone: true,
@@ -26,6 +27,9 @@ class Historique implements OnInit, OnDestroy {
   editMode = false;
   editDomaine = '';
   loading = false;
+
+  vulnsManuelles: any[] = [];
+  showVulnForm = false;
 
   currentPage = 1;
   pageSize = 10;
@@ -108,6 +112,7 @@ class Historique implements OnInit, OnDestroy {
     } else {
       this.selectedScan.riskClass = 'risk-low';
     }
+    this.loadVulnsManuelles(scan.id);
   }
 
   closeModal() {
@@ -125,6 +130,33 @@ class Historique implements OnInit, OnDestroy {
         this.loadScans(this.currentPage);
       },
       error: () => alert('Erreur lors de la suppression'),
+    });
+  }
+
+  loadVulnsManuelles(scanId: number) {
+    this.http.get<any[]>(`${this.apiUrl}/scans/${scanId}/vulnerabilites/`).subscribe({
+      next: (data) => (this.vulnsManuelles = data),
+      error: () => (this.vulnsManuelles = []),
+    });
+  }
+
+  openVulnForm() {
+    this.showVulnForm = true;
+  }
+
+  onVulnFormClose() {
+    this.showVulnForm = false;
+  }
+
+  onVulnAdded() {
+    if (this.selectedScan) this.loadVulnsManuelles(this.selectedScan.id);
+  }
+
+  deleteVulnManuelle(id: number) {
+    this.http.delete(`http://127.0.0.1:8000/api/vulnerabilites/${id}/`).subscribe({
+      next: () => {
+        this.vulnsManuelles = this.vulnsManuelles.filter((v) => v.id !== id);
+      },
     });
   }
 

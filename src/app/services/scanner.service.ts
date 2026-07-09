@@ -19,4 +19,20 @@ export class ScannerService {
   demarrerScan(url: string): Observable<any> {
     return this.http.post<any>(this.apiUrl, { url: url });
   }
+
+  getVulnTemplates(): Observable<any> {
+    return this.http.get<any>('http://127.0.0.1:8000/api/vuln-templates/');
+  }
+
+  getVulnManuelles(scanId: number): Observable<any[]> {
+    return this.http.get<any[]>(`http://127.0.0.1:8000/api/scans/${scanId}/vulnerabilites/`);
+  }
+
+  addVulnManuelle(scanId: number, data: any): Observable<any> {
+    return this.http.post(`http://127.0.0.1:8000/api/scans/${scanId}/vulnerabilites/`, data);
+  }
+
+  deleteVulnManuelle(id: number): Observable<any> {
+    return this.http.delete(`http://127.0.0.1:8000/api/vulnerabilites/${id}/`);
+  }
 }
