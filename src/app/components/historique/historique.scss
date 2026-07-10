@@ -399,6 +399,116 @@
   margin-bottom: 16px;
 }
 
+.technology-card {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #00FF4133;
+  background: #00FF4108;
+}
+
+.technology-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.technology-count {
+  min-width: 26px;
+  padding: 3px 7px;
+  border: 1px solid #00FF41;
+  color: #00FF41;
+  font-size: 11px;
+  line-height: 1;
+  text-align: center;
+}
+
+.technology-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.technology-badge {
+  padding: 5px 8px;
+  border: 1px solid #00D4FF66;
+  background: #00D4FF0D;
+  color: #00D4FF;
+  font-size: 11px;
+}
+
+.technology-version {
+  margin-left: 4px;
+}
+
+.technology-empty {
+  margin: 10px 0 0;
+  color: #00FF4166;
+  font-size: 11px;
+}
+
+.scan-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #00FF4133;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cve-item {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #00FF4133;
+}
+
+.cve-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cve-item p {
+  margin: 8px 0 0;
+  color: #00FF41CC;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.cve-item .recommendation {
+  color: #00D4FF;
+}
+
+.raw-report {
+  margin-top: 8px;
+  border: 1px solid #00FF4133;
+}
+
+.raw-report summary {
+  padding: 9px 10px;
+  cursor: pointer;
+  color: #00D4FF;
+  font-size: 12px;
+}
+
+.raw-report pre {
+  max-height: 320px;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-top: 1px solid #00FF4133;
+  color: #00FF41CC;
+  font: 10px/1.5 'Share Tech Mono', monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .proto-item {
   display: flex;
   justify-content: space-between;

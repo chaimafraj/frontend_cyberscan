@@ -107,6 +107,17 @@
           <button class="close-btn" (click)="closeModal()">✕</button>
         </div>
         <div class="modal-body">
+          @let technologies = selectedScan.whatweb?.technologies ?? selectedScan.resultats_ssl?.whatweb?.technologies;
+          <div class="detail-row">
+            <span class="label">ID DU SCAN:</span>
+            <span class="value">{{ selectedScan.id }}</span>
+          </div>
+          @if (selectedScan.client_nom) {
+            <div class="detail-row">
+              <span class="label">CLIENT:</span>
+              <span class="value">{{ selectedScan.client_nom }}</span>
+            </div>
+          }
           <div class="detail-row">
             <span class="label">DOMAINE:</span>
             <span class="value">{{ selectedScan.domaine }}</span>
@@ -139,38 +150,78 @@
             }
           </div>
 
-          @if (selectedScan.resultats_ssl?.nuclei_findings?.length > 0) {
-            <div class="nuclei-section" style="margin-top: 20px; border-top: 1px solid rgba(0,255,65,0.2); padding-top: 15px;">
-              <span class="label">VULNÉRABILITÉS NUCLEI ({{ selectedScan.resultats_ssl.nuclei_findings.length }}):</span>
-              @for (f of selectedScan.resultats_ssl.nuclei_findings; track f.template_id) {
-                <div style="border: 1px solid rgba(0,255,65,0.3); padding: 10px; margin-top: 8px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <strong>{{ f.name }}</strong>
-                    <span
-                      style="padding: 2px 8px; border: 1px solid; font-size: 0.8em;"
-                      [style.color]="f.severity === 'critical' ? '#ff4444' : f.severity === 'high' ? '#ff8800' : f.severity === 'medium' ? '#ffcc00' : '#00ff41'"
-                      [style.border-color]="f.severity === 'critical' ? '#ff4444' : f.severity === 'high' ? '#ff8800' : f.severity === 'medium' ? '#ffcc00' : '#00ff41'"
-                    >
-                      {{ f.severity | uppercase }}
-                    </span>
+          <section class="technology-card" aria-label="Technologies détectées par WhatWeb">
+            <div class="technology-card-header">
+              <span class="label">TECHNOLOGIES DÉTECTÉES</span>
+              <span class="technology-count">{{ technologies?.length ?? 0 }}</span>
+            </div>
+
+            @if (technologies?.length > 0) {
+              <div class="technology-badges">
+                @for (technology of technologies; track technology.name) {
+                  <span class="technology-badge">
+                    {{ technology.name }}
+                    @if (technology.version?.length) {
+                      <span class="technology-version">{{ technology.version.join(', ') }}</span>
+                    }
+                  </span>
+                }
+              </div>
+            } @else {
+              <p class="technology-empty">Aucune technologie détectée</p>
+            }
+          </section>
+
+          @if (selectedScan.resultats_ssl?.vulnerabilities?.length > 0) {
+            <div class="scan-section">
+              <span class="label">VULNÉRABILITÉS DÉTECTÉES:</span>
+              <div class="tag-list">
+                @for (vulnerability of selectedScan.resultats_ssl.vulnerabilities; track vulnerability) {
+                  <span class="badge danger">{{ vulnerability }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (selectedScan.cves?.length > 0) {
+            <div class="scan-section">
+              <span class="label">CVE ASSOCIÉES:</span>
+              @for (cve of selectedScan.cves; track cve.id) {
+                <div class="cve-item">
+                  <div class="cve-heading">
+                    <strong>{{ cve.cve_id }}</strong>
+                    <span class="badge warn">CVSS {{ cve.cvss_score }}/10</span>
                   </div>
-                  <div style="font-size: 0.85em; opacity: 0.75; margin-top: 4px;">{{ f.template_id }}</div>
-                  @if (f.description) {
-                    <div style="font-size: 0.85em; margin-top: 6px;">{{ f.description }}</div>
-                  }
-                  @if (f.matched_at) {
-                    <div style="font-size: 0.8em; opacity: 0.6; margin-top: 4px;">🔗 {{ f.matched_at }}</div>
+                  <p>{{ cve.description }}</p>
+                  @if (cve.recommandation_ia) {
+                    <p class="recommendation">RECOMMANDATION: {{ cve.recommandation_ia }}</p>
                   }
                 </div>
               }
             </div>
           }
-          @if (!(selectedScan.resultats_ssl?.nuclei_findings?.length > 0)) {
-            <div class="nuclei-section" style="margin-top: 20px; border-top: 1px solid rgba(0,255,65,0.2); padding-top: 15px;">
-              <span class="label">VULNÉRABILITÉS NUCLEI:</span>
-              <p style="opacity: 0.6; font-size: 0.9em; margin-top: 5px;">Aucune vulnérabilité détectée par Nuclei.</p>
-            </div>
-          }
+
+          <div class="scan-section">
+            <span class="label">RAPPORTS TECHNIQUES:</span>
+            @if (selectedScan.resultats_ssl?.nmap) {
+              <details class="raw-report">
+                <summary>Nmap</summary>
+                <pre>{{ selectedScan.resultats_ssl.nmap }}</pre>
+              </details>
+            }
+            @if (selectedScan.resultats_ssl?.openssl) {
+              <details class="raw-report">
+                <summary>OpenSSL</summary>
+                <pre>{{ selectedScan.resultats_ssl.openssl }}</pre>
+              </details>
+            }
+            @if (selectedScan.resultats_ssl?.sslscan) {
+              <details class="raw-report">
+                <summary>SSLScan</summary>
+                <pre>{{ selectedScan.resultats_ssl.sslscan }}</pre>
+              </details>
+            }
+          </div>
 
           <div class="vulns-manuelles-section" style="margin-top: 20px; border-top: 1px solid rgba(0,255,65,0.2); padding-top: 15px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
