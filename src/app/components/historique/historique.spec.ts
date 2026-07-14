@@ -19,6 +19,9 @@ describe('Historique', () => {
     component = fixture.componentInstance;
     httpMock = TestBed.inject(HttpTestingController);
     await fixture.whenStable();
+
+    const initReq = httpMock.expectOne((request) => request.url === 'http://127.0.0.1:8000/api/scans/');
+    initReq.flush({ results: [], total: 0, total_pages: 1, page: 1 });
   });
 
   afterEach(() => {
@@ -37,8 +40,8 @@ describe('Historique', () => {
     const req = httpMock.expectOne((request) => request.url === 'http://127.0.0.1:8000/api/scans/');
     expect(req.request.method).toBe('GET');
     expect(req.request.params.get('page')).toBe('1');
-    expect(req.request.params.get('page_size')).toBe('5');
-    expect(req.request.params.has('search')).toBeFalse();
+    expect(req.request.params.get('page_size')).toBe('10');
+    expect(req.request.params.has('search')).toBe(false);
 
     req.flush({ results: [], total: 0, total_pages: 1, page: 1 });
   });
