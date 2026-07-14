@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { ScannerService } from '../../services/scanner.service'; // 🆕 Import el service mte3ik s7i7!
+import { ScanResponse, SiteReport, ZapFinding } from '../../models/scan.model';
 
 @Component({
   selector: 'app-scanner',
@@ -16,7 +17,9 @@ export class Scanner implements OnInit, OnDestroy {
   targetUrl = '';
   port = '443';
   scanning = false;
-  scanResult: any = null;
+  scanResult: SiteReport | null = null;
+  zapFindings: ZapFinding[] = [];
+  zapRequested = false;
   errorMsg = '';
   private matrixInterval: any;
 
@@ -25,8 +28,10 @@ export class Scanner implements OnInit, OnDestroy {
     { id: 'nmap', label: 'NMAP SSL', checked: true },
     { id: 'openssl', label: 'OPENSSL', checked: true },
     { id: 'ssllabs', label: 'SSL LABS API', checked: false },
+    { id: 'nuclei', label: 'NUCLEI', checked: true },
+    { id: 'whatweb', label: 'WHATWEB', checked: false },
+    { id: 'zap', label: 'OWASP ZAP Baseline', checked: false },
   ];
-
   // 🆕 Injecti el ScannerService hna (na3mlo remove lil HttpClient mel component direct)
   constructor(
     private scannerService: ScannerService,
@@ -45,20 +50,29 @@ export class Scanner implements OnInit, OnDestroy {
     if (!this.targetUrl) return;
     this.scanning = true;
     this.scanResult = null;
+    this.zapFindings = [];
     this.errorMsg = '';
 
-    this.scannerService.demarrerScan(this.targetUrl).subscribe({
-      next: (result) => {
+    // On récupère l'état de la case OWASP ZAP Baseline sans toucher aux autres scanners
+    const zap = this.options.find((opt) => opt.id === 'zap')?.checked ?? false;
+    this.zapRequested = zap;
+
+    this.scannerService.demarrerScan(this.targetUrl, zap).subscribe({
+      next: (result: ScanResponse) => {
         this.scanning = false;
 
         // 🟢 Extraction s7i7a mta3 el rapport global khater Django wraps it in 'rapport'
         if (result && result.rapport && result.rapport.length > 0) {
           this.scanResult = result.rapport[0]; // Na9raw el site results direkt kima y7eb el html
         } else {
-          this.scanResult = result; // Fallback filter
+          this.scanResult = result as SiteReport; // Fallback filter
         }
 
+        // 🟢 Récupération des alertes OWASP ZAP (racine ou à l'intérieur du rapport)
+        this.zapFindings = this.extraireZapFindings(result, this.scanResult);
+
         console.log('Rapport CYBERSCAN chargé avec succès:', this.scanResult);
+        console.log('Alertes OWASP ZAP:', this.zapFindings);
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -68,6 +82,21 @@ export class Scanner implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  // Cherche zap_findings dans la réponse racine puis dans le rapport site
+  private extraireZapFindings(root: ScanResponse, site: SiteReport | null): ZapFinding[] {
+    const findings = root?.zap_findings ?? site?.zap_findings ?? [];
+    return Array.isArray(findings) ? findings : [];
+  }
+
+  // Normalise le niveau de risque pour le style CSS (high / medium / low / info)
+  riskClass(risk: string): string {
+    const r = (risk || '').toLowerCase();
+    if (r.includes('high')) return 'high';
+    if (r.includes('medium')) return 'medium';
+    if (r.includes('low')) return 'low';
+    return 'info';
   }
   startMatrix() {
     setTimeout(() => {

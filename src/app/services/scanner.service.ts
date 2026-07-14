@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ScanResponse } from '../models/scan.model';
 
 @Injectable({
   providedIn: 'root',
@@ -16,8 +17,8 @@ export class ScannerService {
   }
 
   // 2. El HTTP POST call mta3 el scan
-  demarrerScan(url: string): Observable<any> {
-    return this.http.post<any>(this.apiUrl, { url: url });
+  demarrerScan(url: string, zap: boolean = false): Observable<ScanResponse> {
+    return this.http.post<ScanResponse>(this.apiUrl, { url: url, options: { zap: zap } });
   }
 
   getVulnTemplates(): Observable<any> {

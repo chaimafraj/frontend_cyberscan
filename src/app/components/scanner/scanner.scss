@@ -287,6 +287,88 @@
 
 .no-vuln { padding: 10px 0; }
 
+/* OWASP ZAP findings */
+.zap-card { grid-column: 1 / -1; }
+
+.zap-item {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-left: 3px solid #00FF4144;
+  background: #00FF4108;
+}
+
+.zap-item:last-of-type { margin-bottom: 0; }
+
+/* Affichage différencié selon le niveau de risque */
+.zap-item.risk-high {
+  border-left-color: #ff4444;
+  background: #ff444410;
+}
+
+.zap-item.risk-medium {
+  border-left-color: #ffaa00;
+  background: #ffaa0010;
+}
+
+.zap-item.risk-low {
+  border-left-color: #00d4ff;
+  background: #00d4ff0d;
+}
+
+.zap-item.risk-info {
+  border-left-color: #00FF4144;
+  background: #00FF4108;
+}
+
+.zap-risk-badge { padding: 2px 8px; font-size: 9px; letter-spacing: 1px; }
+.badge-high   { border: 1px solid #ff4444; color: #ff4444; }
+.badge-medium { border: 1px solid #ffaa00; color: #ffaa00; }
+.badge-low    { border: 1px solid #00d4ff; color: #00d4ff; }
+.badge-info   { border: 1px solid #00FF41; color: #00FF41; }
+
+.zap-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.zap-name {
+  font-size: 12px;
+  color: #00FF41;
+  letter-spacing: 1px;
+}
+
+.zap-url {
+  display: inline-block;
+  margin-top: 4px;
+  color: #00d4ff;
+  font-size: 11px;
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.zap-url:hover { text-decoration: underline; }
+
+.zap-desc {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #00FF4188;
+  line-height: 1.6;
+}
+
+.zap-solution {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #00FF41aa;
+  line-height: 1.6;
+}
+
+.zap-solution-label {
+  color: #ffaa00;
+  letter-spacing: 1px;
+}
+
 .terminal {
   border: 1px solid #00FF4133;
   background: #050f05;

@@ -50,6 +50,7 @@
         <div class="step ok">[ ✓ ] CONNEXION SSH → VM DEBIAN</div>
         <div class="step ok">[ ✓ ] SSLSCAN LANCÉ</div>
         <div class="step active">[ ► ] NMAP SSL-ENUM EN COURS...</div>
+        <div class="step active" *ngIf="zapRequested">[ ► ] OWASP ZAP BASELINE EN COURS...</div>
         <div class="step pending">[ · ] CVE MATCHING</div>
         <div class="step pending">[ · ] IA SCORING</div>
       </div>
@@ -69,14 +70,14 @@
         <div class="risk-bar">
           <div class="risk-label">
             <span>SCORE DE RISQUE IA</span>
-            <span [class]="scanResult?.score_risque_ia >= 7 ? 'danger-text' : scanResult?.score_risque_ia >= 4 ? 'warn-text' : 'ok-text'">
+            <span [class]="(scanResult?.score_risque_ia ?? 0) >= 7 ? 'danger-text' : (scanResult?.score_risque_ia ?? 0) >= 4 ? 'warn-text' : 'ok-text'">
               {{ scanResult?.score_risque_ia ?? 0 }}/10
             </span>
           </div>
           <div class="risk-track">
             <div class="risk-fill"
                  [style.width.%]="(scanResult?.score_risque_ia ?? 0) * 10"
-                 [style.background]="scanResult?.score_risque_ia >= 7 ? '#ff4444' : scanResult?.score_risque_ia >= 4 ? '#ffaa00' : '#00FF41'">
+                 [style.background]="(scanResult?.score_risque_ia ?? 0) >= 7 ? '#ff4444' : (scanResult?.score_risque_ia ?? 0) >= 4 ? '#ffaa00' : '#00FF41'">
             </div>
           </div>
         </div>
@@ -93,6 +94,33 @@
           <span class="badge-ok">✓ AUCUNE VULNÉRABILITÉ CRITIQUE</span>
         </div>
       </div>
+
+      <div class="result-card zap-card" *ngIf="zapRequested">
+        <div class="card-title">▸ OWASP ZAP — ALERTES ({{ zapFindings.length }})</div>
+
+        <div class="zap-item" *ngFor="let finding of zapFindings" [ngClass]="'risk-' + riskClass(finding?.risk)">
+          <div class="zap-head">
+            <span class="zap-name">{{ finding?.name || 'Alerte inconnue' }}</span>
+            <span class="zap-risk-badge" [ngClass]="'badge-' + riskClass(finding?.risk)">
+              {{ finding?.risk || 'Info' }}
+            </span>
+          </div>
+
+          <a class="zap-url" *ngIf="finding?.url" [href]="finding?.url" target="_blank" rel="noopener">
+            {{ finding?.url }}
+          </a>
+
+          <p class="zap-desc" *ngIf="finding?.description">{{ finding?.description }}</p>
+
+          <div class="zap-solution" *ngIf="finding?.solution">
+            <span class="zap-solution-label">RECOMMANDATION :</span> {{ finding?.solution }}
+          </div>
+        </div>
+
+        <div class="no-vuln" *ngIf="zapFindings.length === 0">
+          <span class="badge-ok">✓ AUCUNE ALERTE OWASP ZAP DÉTECTÉE</span>
+        </div>
+      </div>
     </div>
 
     <div class="terminal" *ngIf="scanResult">
@@ -100,7 +128,7 @@
       <div class="terminal-line cmd">&gt; sslscan {{ scanResult?.domaine }}</div>
       <div class="terminal-line ok">[✓] Scan terminé — Score: {{ scanResult?.score_risque_ia ?? 0 }}/10</div>
 
-      <div class="terminal-line err" *ngIf="scanResult?.vulnerabilities?.length > 0">
+      <div class="terminal-line err" *ngIf="(scanResult?.vulnerabilities?.length ?? 0) > 0">
         [!] {{ scanResult?.vulnerabilities?.length }} vulnérabilité(s) détectée(s)
       </div>
       <div class="terminal-line ok" *ngIf="!scanResult?.vulnerabilities || scanResult?.vulnerabilities?.length === 0">
