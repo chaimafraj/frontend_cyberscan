@@ -11,19 +11,19 @@
 
     <div class="alertes-stats">
       <div class="alerte-stat danger">
-        <div class="stat-num">3</div>
+        <div class="stat-num">{{ stats.critiques }}</div>
         <div class="stat-label">CRITIQUES</div>
       </div>
       <div class="alerte-stat warn">
-        <div class="stat-num">5</div>
+        <div class="stat-num">{{ stats.moyennes }}</div>
         <div class="stat-label">MOYENNES</div>
       </div>
       <div class="alerte-stat ok">
-        <div class="stat-num">2</div>
+        <div class="stat-num">{{ stats.faibles }}</div>
         <div class="stat-label">FAIBLES</div>
       </div>
       <div class="alerte-stat">
-        <div class="stat-num">10</div>
+        <div class="stat-num">{{ stats.total }}</div>
         <div class="stat-label">TOTAL</div>
       </div>
     </div>

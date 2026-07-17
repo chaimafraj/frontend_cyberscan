@@ -21,7 +21,12 @@ export class Scanner implements OnInit, OnDestroy {
   zapFindings: ZapFinding[] = [];
   zapRequested = false;
   errorMsg = '';
+  targetError = '';
   private matrixInterval: any;
+
+  // Accepte : domaine (google.com), IPv4 (1.2.3.4), ou host:port (esprit.tn:8443)
+  private readonly TARGET_REGEX =
+    /^(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3})(?::\d{1,5})?$/;
 
   options = [
     { id: 'sslscan', label: 'SSLSCAN', checked: true },
@@ -31,6 +36,7 @@ export class Scanner implements OnInit, OnDestroy {
     { id: 'nuclei', label: 'NUCLEI', checked: true },
     { id: 'whatweb', label: 'WHATWEB', checked: false },
     { id: 'zap', label: 'OWASP ZAP Baseline', checked: false },
+    { id: 'nvd', label: 'NVD (National Vulnerability Database)', checked: true },
   ];
   // 🆕 Injecti el ScannerService hna (na3mlo remove lil HttpClient mel component direct)
   constructor(
@@ -46,18 +52,52 @@ export class Scanner implements OnInit, OnDestroy {
     if (this.matrixInterval) clearInterval(this.matrixInterval);
   }
 
+  // Valide le champ "Domaine cible" (domaine, IP, ou host:port). Renvoie true si vide/valide.
+  validateTarget(): boolean {
+    const value = (this.targetUrl || '').trim();
+    if (!value) {
+      this.targetError = '';
+      return false;
+    }
+    if (!this.TARGET_REGEX.test(value)) {
+      this.targetError = 'Format invalide. Exemples : google.com, 193.95.99.197, ou esprit.tn:8443';
+      return false;
+    }
+    this.targetError = '';
+    return true;
+  }
+
+  // Construit la cible envoyée au backend : "host" seul, ou "host:port" si le port != 443.
+  // Le port saisi dans le champ domaine (host:port) prime sur le champ PORT séparé.
+  private buildTarget(): string {
+    const value = (this.targetUrl || '').trim();
+    const [host, portInUrl] = value.split(':');
+    const port = (portInUrl || this.port || '443').trim();
+    return port && port !== '443' ? `${host}:${port}` : host;
+  }
+
   lancerScan() {
-    if (!this.targetUrl) return;
+    if (!this.validateTarget()) return;
+
+    const target = this.buildTarget();
     this.scanning = true;
     this.scanResult = null;
     this.zapFindings = [];
     this.errorMsg = '';
 
-    // On récupère l'état de la case OWASP ZAP Baseline sans toucher aux autres scanners
-    const zap = this.options.find((opt) => opt.id === 'zap')?.checked ?? false;
-    this.zapRequested = zap;
+    // On envoie l'état de toutes les cases (zap, nuclei, nvd, ...) dans options.<id>
+    const options = this.options.reduce(
+      (acc, opt) => {
+        acc[opt.id] = opt.checked;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
 
-    this.scannerService.demarrerScan(this.targetUrl, zap).subscribe({
+    // OWASP ZAP pilote l'affichage de l'étape et de la carte dédiées
+    this.zapRequested = options['zap'] ?? false;
+
+    this.scannerService.demarrerScan(target, options).subscribe({
       next: (result: ScanResponse) => {
         this.scanning = false;
 

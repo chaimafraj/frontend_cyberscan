@@ -15,8 +15,10 @@
         <input
           class="cyber-input"
           [(ngModel)]="targetUrl"
-          placeholder="ex: google.com"
+          (ngModelChange)="validateTarget()"
+          placeholder="ex: google.com, 193.95.99.197 ou esprit.tn:8443"
         />
+        <span class="input-error" *ngIf="targetError">⚠ {{ targetError }}</span>
       </div>
       <div class="input-group">
         <label>PORT</label>

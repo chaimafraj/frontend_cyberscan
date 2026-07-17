@@ -5,6 +5,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { AuthService } from '../../services/auth.service';
+import { ScannerService } from '../../services/scanner.service';
 import { VulnManuelleForm } from '../vuln-manuelle-form/vuln-manuelle-form';
 
 @Component({
@@ -31,6 +32,10 @@ class Historique implements OnInit, OnDestroy {
   vulnsManuelles: any[] = [];
   showVulnForm = false;
 
+  /** Messages UI (succès / erreur) pour PDF et email */
+  actionMessage: { type: 'success' | 'error'; text: string } | null = null;
+  private actionMessageTimer: ReturnType<typeof setTimeout> | null = null;
+
   currentPage = 1;
   pageSize = 10;
   totalPages = 1;
@@ -42,19 +47,22 @@ class Historique implements OnInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private authService: AuthService,
+    private scannerService: ScannerService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'admin';
     this.displayedColumns = this.isAdmin
-      ? ['client', 'domaine', 'date', 'protocols', 'score', 'statut', 'actions']
-      : ['domaine', 'date', 'protocols', 'score', 'statut', 'actions'];
+      ? ['client', 'domaine', 'date', 'protocols', 'score', 'statut', 'rapport', 'email', 'actions']
+      : ['domaine', 'date', 'protocols', 'score', 'statut', 'rapport', 'email', 'actions'];
     this.startMatrix();
     this.loadScans();
   }
 
   ngOnDestroy() {
     if (this.matrixInterval) clearInterval(this.matrixInterval);
+    if (this.actionMessageTimer) clearTimeout(this.actionMessageTimer);
   }
 
   loadScans(page = 1) {
@@ -72,11 +80,7 @@ class Historique implements OnInit, OnDestroy {
         this.totalPages = data.total_pages ?? Math.max(1, Math.ceil(this.total / this.pageSize));
         this.currentPage = data.page ?? page;
 
-        this.scans = list.map((s: any) => ({
-          ...s,
-          riskClass: s.score_risque_ia >= 7 ? 'danger' : s.score_risque_ia >= 4 ? 'warn' : 'ok',
-          statut: s.score_risque_ia >= 7 ? 'CRITIQUE' : s.score_risque_ia >= 4 ? 'MOYEN' : 'FAIBLE',
-        }));
+        this.scans = list.map((s: any) => this.mapScanUi(s));
         this.dataSource.data = this.scans;
         this.loading = false;
       },
@@ -85,6 +89,215 @@ class Historique implements OnInit, OnDestroy {
         this.loading = false;
       },
     });
+  }
+
+  /** Enrichit un scan avec les champs d'interface PDF / email */
+  private mapScanUi(s: any) {
+    const pdfReady = !!(s.pdf_disponible ?? s.has_rapport);
+    return {
+      ...s,
+      riskClass: s.score_risque_ia >= 7 ? 'danger' : s.score_risque_ia >= 4 ? 'warn' : 'ok',
+      statut: s.score_risque_ia >= 7 ? 'CRITIQUE' : s.score_risque_ia >= 4 ? 'MOYEN' : 'FAIBLE',
+      // Statuts rapport : non_genere | generation | pret | erreur
+      rapportStatus:
+        s.rapport_status ?? s.rapportStatus ?? (pdfReady ? 'pret' : 'non_genere'),
+      // Statuts email : non_envoye | envoi | envoye | erreur
+      emailStatus: s.email_status ?? s.emailStatus ?? 'non_envoye',
+      pdfGenerating: false,
+      pdfDownloading: false,
+      emailSending: false,
+    };
+  }
+
+  getRapportStatusLabel(status: string): string {
+    switch (status) {
+      case 'generation':
+        return 'GÉNÉRATION...';
+      case 'pret':
+        return 'PRÊT';
+      case 'erreur':
+        return 'ERREUR';
+      default:
+        return 'NON GÉNÉRÉ';
+    }
+  }
+
+  getEmailStatusLabel(status: string): string {
+    switch (status) {
+      case 'envoi':
+        return 'ENVOI...';
+      case 'envoye':
+        return 'ENVOYÉ';
+      case 'erreur':
+        return 'ERREUR';
+      default:
+        return 'NON ENVOYÉ';
+    }
+  }
+
+  showActionMessage(type: 'success' | 'error', text: string) {
+    if (this.actionMessageTimer) clearTimeout(this.actionMessageTimer);
+    this.actionMessage = { type, text };
+    this.actionMessageTimer = setTimeout(() => {
+      this.actionMessage = null;
+      this.actionMessageTimer = null;
+      this.cdr.detectChanges();
+    }, 4000);
+    this.cdr.detectChanges();
+  }
+
+  clearActionMessage() {
+    if (this.actionMessageTimer) clearTimeout(this.actionMessageTimer);
+    this.actionMessage = null;
+  }
+
+  private refreshScanRow(scan: any) {
+    this.dataSource.data = [...this.scans];
+    this.cdr.detectChanges();
+  }
+
+  private extractErrorMessage(err: any, fallback: string): string {
+    const body = err?.error;
+    if (!body) return fallback;
+    if (typeof body === 'string') return body;
+    if (body.error) return String(body.error);
+    if (body.detail) return String(body.detail);
+    if (body.message) return String(body.message);
+    return fallback;
+  }
+
+  private async blobErrorMessage(err: any, fallback: string): Promise<string> {
+    try {
+      if (err?.error instanceof Blob) {
+        const text = await err.error.text();
+        const parsed = JSON.parse(text);
+        return parsed.error || parsed.detail || parsed.message || fallback;
+      }
+    } catch {
+      /* ignore parse errors */
+    }
+    return this.extractErrorMessage(err, fallback);
+  }
+
+  /**
+   * Génère si besoin puis télécharge le rapport PDF via l'API.
+   * GET /api/scans/:id/rapport/download/
+   */
+  telechargerRapportPdf(scan: any, event?: Event) {
+    event?.stopPropagation();
+    if (scan.pdfGenerating || scan.pdfDownloading) return;
+
+    this.clearActionMessage();
+    scan.pdfGenerating = true;
+    scan.rapportStatus = 'generation';
+    this.refreshScanRow(scan);
+
+    this.scannerService.downloadRapportPdf(scan.id).subscribe({
+      next: (blob) => {
+        scan.pdfGenerating = false;
+
+        if (!(blob instanceof Blob) || blob.size === 0) {
+          scan.rapportStatus = 'erreur';
+          scan.pdfDownloading = false;
+          this.showActionMessage('error', `Rapport PDF vide pour ${scan.domaine}.`);
+          this.refreshScanRow(scan);
+          return;
+        }
+
+        // Erreur JSON renvoyée en blob (ex. 500)
+        if (blob.type && blob.type.includes('application/json')) {
+          blob.text().then((text) => {
+            let msg = `Échec du téléchargement du rapport PDF pour ${scan.domaine}.`;
+            try {
+              const parsed = JSON.parse(text);
+              msg = parsed.error || parsed.detail || msg;
+            } catch {
+              /* keep default */
+            }
+            scan.rapportStatus = 'erreur';
+            scan.pdfDownloading = false;
+            this.showActionMessage('error', msg);
+            this.refreshScanRow(scan);
+          });
+          return;
+        }
+
+        scan.pdfDownloading = true;
+        this.refreshScanRow(scan);
+
+        const filename = `rapport_cyberscan_${scan.id}_${(scan.domaine || 'scan').replace(/[^\w.-]+/g, '_')}.pdf`;
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        scan.pdfDownloading = false;
+        scan.rapportStatus = 'pret';
+        scan.pdf_disponible = true;
+        scan.has_rapport = true;
+        this.showActionMessage('success', `Rapport PDF de ${scan.domaine} téléchargé avec succès.`);
+        this.refreshScanRow(scan);
+      },
+      error: async (err) => {
+        scan.pdfGenerating = false;
+        scan.pdfDownloading = false;
+        scan.rapportStatus = 'erreur';
+        const msg = await this.blobErrorMessage(
+          err,
+          `Échec du téléchargement du rapport PDF pour ${scan.domaine}.`,
+        );
+        this.showActionMessage('error', msg);
+        this.refreshScanRow(scan);
+      },
+    });
+  }
+
+  /**
+   * Envoie le rapport par email (API).
+   * POST /api/scans/:id/rapport/email/
+   * (L'envoi automatique post-scan reste géré côté backend via finalize_scan_report.)
+   */
+  envoyerRapportEmail(scan: any, event?: Event) {
+    event?.stopPropagation();
+    if (scan.emailSending) return;
+
+    this.clearActionMessage();
+    scan.emailSending = true;
+    scan.emailStatus = 'envoi';
+    this.refreshScanRow(scan);
+
+    this.scannerService.sendRapportEmail(scan.id).subscribe({
+      next: (res) => {
+        scan.emailSending = false;
+        scan.emailStatus = 'envoye';
+        const recipients = (res?.recipients || []).join(', ');
+        this.showActionMessage(
+          'success',
+          recipients
+            ? `Rapport de ${scan.domaine} envoyé à ${recipients}.`
+            : `Rapport de ${scan.domaine} envoyé par email avec succès.`,
+        );
+        this.refreshScanRow(scan);
+      },
+      error: (err) => {
+        scan.emailSending = false;
+        scan.emailStatus = 'erreur';
+        const msg = this.extractErrorMessage(
+          err,
+          `Échec de l'envoi du rapport par email pour ${scan.domaine}.`,
+        );
+        this.showActionMessage('error', msg);
+        this.refreshScanRow(scan);
+      },
+    });
+  }
+
+  isScanBusy(scan: any): boolean {
+    return !!(scan?.pdfGenerating || scan?.pdfDownloading || scan?.emailSending);
   }
 
   lancerRecherche() {

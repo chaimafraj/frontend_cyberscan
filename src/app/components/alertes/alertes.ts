@@ -1,80 +1,51 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-alertes',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './alertes.html',
   styleUrl: './alertes.scss',
 })
 export class Alertes implements OnInit, OnDestroy {
   private matrixInterval: any;
+  private apiUrl = 'http://127.0.0.1:8000/api/alertes/';
 
-  alertes = [
-    {
-      icon: '⚠',
-      titre: 'TLSv1.0 DÉTECTÉ — google.com',
-      message: 'Protocole obsolète détecté. Vulnérable aux attaques BEAST et POODLE.',
-      date: '2026-06-19 10:32',
-      niveau: 'CRITIQUE',
-      type: 'danger',
-    },
-    {
-      icon: '⚠',
-      titre: 'CVE-2016-2183 — google.com',
-      message: "Cipher 3DES vulnérable à l'attaque SWEET32 (CVSS 7.5).",
-      date: '2026-06-19 10:32',
-      niveau: 'CRITIQUE',
-      type: 'danger',
-    },
-    {
-      icon: '!',
-      titre: 'TLSv1.1 DÉTECTÉ — example.com',
-      message: 'Protocole déprécié. Recommandé: désactiver TLSv1.1.',
-      date: '2026-06-17 09:00',
-      niveau: 'MOYEN',
-      type: 'warn',
-    },
-    {
-      icon: '!',
-      titre: 'Certificat expire bientôt — stackoverflow.com',
-      message: 'Certificat SSL expire dans 15 jours. Renouvellement recommandé.',
-      date: '2026-06-16 16:45',
-      niveau: 'MOYEN',
-      type: 'warn',
-    },
-    {
-      icon: '⚠',
-      titre: 'CVE-2014-3566 POODLE — example.com',
-      message: 'Vulnérabilité POODLE détectée sur SSLv3 (CVSS 3.4).',
-      date: '2026-06-17 09:00',
-      niveau: 'CRITIQUE',
-      type: 'danger',
-    },
-    {
-      icon: 'i',
-      titre: 'Scan terminé — github.com',
-      message: 'Aucune vulnérabilité critique détectée. Score IA: 3.2/10.',
-      date: '2026-06-18 14:15',
-      niveau: 'FAIBLE',
-      type: 'ok',
-    },
-    {
-      icon: 'i',
-      titre: 'Scan terminé — mozilla.org',
-      message: 'Configuration SSL excellente. TLSv1.3 uniquement. Score: 1.2/10.',
-      date: '2026-06-15 11:20',
-      niveau: 'FAIBLE',
-      type: 'ok',
-    },
-  ];
+  alertes: any[] = [];
+  stats = { critiques: 0, moyennes: 0, faibles: 0, total: 0 };
+  loading = false;
+
+  constructor(
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit() {
     this.startMatrix();
+    this.loadAlertes();
   }
 
   ngOnDestroy() {
     if (this.matrixInterval) clearInterval(this.matrixInterval);
+  }
+
+  loadAlertes() {
+    this.loading = true;
+    this.http.get<any>(this.apiUrl).subscribe({
+      next: (data) => {
+        this.alertes = data.alertes || [];
+        this.stats = data.stats || { critiques: 0, moyennes: 0, faibles: 0, total: 0 };
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erreur chargement alertes:', err);
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   startMatrix() {

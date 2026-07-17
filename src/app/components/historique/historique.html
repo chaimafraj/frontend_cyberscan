@@ -9,6 +9,20 @@
       <p class="page-sub">Tous les scans effectués — {{ total }} au total</p>
     </div>
 
+    @if (actionMessage) {
+      <div
+        class="action-toast"
+        [class.success]="actionMessage.type === 'success'"
+        [class.error]="actionMessage.type === 'error'"
+        role="status"
+        aria-live="polite"
+      >
+        <span class="toast-icon">{{ actionMessage.type === 'success' ? '✓' : '⚠' }}</span>
+        <span class="toast-text">{{ actionMessage.text }}</span>
+        <button type="button" class="toast-close" (click)="clearActionMessage()" aria-label="Fermer">✕</button>
+      </div>
+    }
+
     <div class="filter-bar">
       <input
         class="cyber-input"
@@ -53,16 +67,58 @@
         </ng-container>
 
         <ng-container matColumnDef="score">
-          <th mat-header-cell *matHeaderCellDef>SCORE IA</th>
+          <th mat-header-cell *matHeaderCellDef>SCORE</th>
           <td mat-cell *matCellDef="let scan" class="score" [ngClass]="scan.riskClass">
             {{ scan.score_risque_ia }}/10
           </td>
         </ng-container>
 
         <ng-container matColumnDef="statut">
-          <th mat-header-cell *matHeaderCellDef>STATUT</th>
+          <th mat-header-cell *matHeaderCellDef>NIVEAU DE RISQUE</th>
           <td mat-cell *matCellDef="let scan">
             <span class="badge" [ngClass]="scan.riskClass">{{ scan.statut }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="rapport">
+          <th mat-header-cell *matHeaderCellDef>RAPPORT PDF</th>
+          <td mat-cell *matCellDef="let scan" class="status-cell">
+            <span class="status-with-icon">
+              <span class="status-icon pdf-icon" title="Rapport PDF" aria-hidden="true">📄</span>
+              @if (scan.pdfGenerating || scan.pdfDownloading) {
+                <span class="inline-loader" aria-label="Chargement"></span>
+              }
+              <span
+                class="badge status-badge"
+                [class.idle]="scan.rapportStatus === 'non_genere'"
+                [class.pending]="scan.rapportStatus === 'generation'"
+                [class.ok]="scan.rapportStatus === 'pret'"
+                [class.danger]="scan.rapportStatus === 'erreur'"
+              >
+                {{ getRapportStatusLabel(scan.rapportStatus) }}
+              </span>
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>EMAIL</th>
+          <td mat-cell *matCellDef="let scan" class="status-cell">
+            <span class="status-with-icon">
+              <span class="status-icon email-icon" title="Email" aria-hidden="true">✉</span>
+              @if (scan.emailSending) {
+                <span class="inline-loader" aria-label="Chargement"></span>
+              }
+              <span
+                class="badge status-badge"
+                [class.idle]="scan.emailStatus === 'non_envoye'"
+                [class.pending]="scan.emailStatus === 'envoi'"
+                [class.ok]="scan.emailStatus === 'envoye'"
+                [class.danger]="scan.emailStatus === 'erreur'"
+              >
+                {{ getEmailStatusLabel(scan.emailStatus) }}
+              </span>
+            </span>
           </td>
         </ng-container>
 
@@ -70,6 +126,34 @@
           <th mat-header-cell *matHeaderCellDef>ACTIONS</th>
           <td mat-cell *matCellDef="let scan" class="actions">
             <button type="button" class="action-btn view-btn" (click)="viewScan(scan); $event.stopPropagation()" aria-label="Voir le scan">👁</button>
+            <button
+              type="button"
+              class="action-btn pdf-btn"
+              (click)="telechargerRapportPdf(scan, $event)"
+              [disabled]="scan.pdfGenerating || scan.pdfDownloading"
+              [attr.aria-label]="scan.pdfGenerating ? 'Génération du PDF...' : scan.pdfDownloading ? 'Téléchargement...' : 'Télécharger le Rapport PDF'"
+              title="Télécharger le Rapport PDF"
+            >
+              @if (scan.pdfGenerating || scan.pdfDownloading) {
+                <span class="btn-spinner" aria-hidden="true"></span>
+              } @else {
+                📄
+              }
+            </button>
+            <button
+              type="button"
+              class="action-btn email-btn"
+              (click)="envoyerRapportEmail(scan, $event)"
+              [disabled]="scan.emailSending"
+              [attr.aria-label]="scan.emailSending ? 'Envoi email...' : 'Envoyer le Rapport par Email'"
+              title="Envoyer le Rapport par Email"
+            >
+              @if (scan.emailSending) {
+                <span class="btn-spinner" aria-hidden="true"></span>
+              } @else {
+                ✉
+              }
+            </button>
             <button type="button" class="action-btn delete-btn" (click)="deleteScan(scan, $event)" aria-label="Supprimer le scan">🗑</button>
           </td>
         </ng-container>
@@ -127,9 +211,84 @@
             <span class="value">{{ selectedScan.date_scan | date:'dd/MM/yyyy HH:mm:ss' }}</span>
           </div>
           <div class="detail-row">
-            <span class="label">SCORE IA:</span>
+            <span class="label">SCORE:</span>
             <span class="value" [ngClass]="selectedScan.riskClass">{{ selectedScan.score_risque_ia }}/10</span>
           </div>
+          <div class="detail-row">
+            <span class="label">NIVEAU DE RISQUE:</span>
+            <span class="value" [ngClass]="selectedScan.riskClass">{{ selectedScan.statut }}</span>
+          </div>
+
+          <div class="scan-section rapport-section">
+            <span class="label">RAPPORT:</span>
+            <div class="rapport-status-row">
+              <span class="status-with-icon">
+                <span class="status-icon pdf-icon" aria-hidden="true">📄</span>
+                <span class="label">Statut du rapport:</span>
+                @if (selectedScan.pdfGenerating || selectedScan.pdfDownloading) {
+                  <span class="inline-loader" aria-label="Chargement"></span>
+                }
+                <span
+                  class="badge status-badge"
+                  [class.idle]="selectedScan.rapportStatus === 'non_genere'"
+                  [class.pending]="selectedScan.rapportStatus === 'generation'"
+                  [class.ok]="selectedScan.rapportStatus === 'pret'"
+                  [class.danger]="selectedScan.rapportStatus === 'erreur'"
+                >
+                  {{ getRapportStatusLabel(selectedScan.rapportStatus) }}
+                </span>
+              </span>
+              <span class="status-with-icon">
+                <span class="status-icon email-icon" aria-hidden="true">✉</span>
+                <span class="label">Statut de l'email:</span>
+                @if (selectedScan.emailSending) {
+                  <span class="inline-loader" aria-label="Chargement"></span>
+                }
+                <span
+                  class="badge status-badge"
+                  [class.idle]="selectedScan.emailStatus === 'non_envoye'"
+                  [class.pending]="selectedScan.emailStatus === 'envoi'"
+                  [class.ok]="selectedScan.emailStatus === 'envoye'"
+                  [class.danger]="selectedScan.emailStatus === 'erreur'"
+                >
+                  {{ getEmailStatusLabel(selectedScan.emailStatus) }}
+                </span>
+              </span>
+            </div>
+
+            <div class="rapport-actions">
+              <button
+                type="button"
+                class="modal-btn pdf-download-btn"
+                (click)="telechargerRapportPdf(selectedScan, $event)"
+                [disabled]="selectedScan.pdfGenerating || selectedScan.pdfDownloading"
+              >
+                @if (selectedScan.pdfGenerating) {
+                  <span class="btn-spinner" aria-hidden="true"></span>
+                  Génération du PDF...
+                } @else if (selectedScan.pdfDownloading) {
+                  <span class="btn-spinner" aria-hidden="true"></span>
+                  Téléchargement...
+                } @else {
+                  📄 Télécharger le Rapport PDF
+                }
+              </button>
+              <button
+                type="button"
+                class="modal-btn email-send-btn"
+                (click)="envoyerRapportEmail(selectedScan, $event)"
+                [disabled]="selectedScan.emailSending"
+              >
+                @if (selectedScan.emailSending) {
+                  <span class="btn-spinner" aria-hidden="true"></span>
+                  Envoi Email...
+                } @else {
+                  ✉ Envoyer le Rapport par Email
+                }
+              </button>
+            </div>
+          </div>
+
           <div class="detail-row">
             <span class="label">PROTOCOLES:</span>
           </div>
@@ -200,6 +359,32 @@
               }
             </div>
           }
+
+          <div class="scan-section">
+            <span class="label">CVE DÉTECTÉES (NVD):</span>
+            @let nvdCves = selectedScan.resultats_ssl?.nvd_cves;
+            @if (nvdCves?.length > 0) {
+              @for (cve of nvdCves; track cve.cve_id ?? cve.id) {
+                <div class="cve-item">
+                  <div class="cve-heading">
+                    <strong>{{ cve.cve_id ?? cve.id }}</strong>
+                    <span class="badge warn">CVSS {{ cve.cvss_score ?? cve.cvssScore ?? cve.score ?? 'N/A' }}</span>
+                  </div>
+                  <p>
+                    <span class="label">SÉVÉRITÉ :</span>
+                    {{ cve.severity ?? cve.baseSeverity ?? cve.severite ?? 'N/A' }}
+                  </p>
+                  <p>{{ cve.description ?? 'Aucune description disponible.' }}</p>
+                  <p>
+                    <span class="label">PUBLIÉE LE :</span>
+                    {{ (cve.date_publication ?? cve.published ?? cve.publishedDate) | date:'dd/MM/yyyy' }}
+                  </p>
+                </div>
+              }
+            } @else {
+              <p class="technology-empty">Aucune CVE trouvée.</p>
+            }
+          </div>
 
           <div class="scan-section">
             <span class="label">RAPPORTS TECHNIQUES:</span>

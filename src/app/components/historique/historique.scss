@@ -249,6 +249,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .action-btn {
@@ -259,11 +260,21 @@
   padding: 4px 8px;
   cursor: pointer;
   transition: all 0.2s;
+  min-width: 32px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.action-btn:hover {
+.action-btn:hover:not([disabled]) {
   border-color: #00FF41;
   background: #00FF4111;
+}
+
+.action-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .action-btn.delete-btn {
@@ -271,9 +282,207 @@
   color: #ff4444;
 }
 
-.action-btn.delete-btn:hover {
+.action-btn.delete-btn:hover:not([disabled]) {
   border-color: #ff4444;
   background: #ff444411;
+}
+
+.action-btn.pdf-btn {
+  border-color: #00d4ff44;
+  color: #00d4ff;
+}
+
+.action-btn.pdf-btn:hover:not([disabled]) {
+  border-color: #00d4ff;
+  background: #00d4ff11;
+}
+
+.action-btn.email-btn {
+  border-color: #00FF4133;
+  color: #00FF41;
+}
+
+.action-btn.email-btn:hover:not([disabled]) {
+  border-color: #00FF41;
+  background: #00FF4111;
+}
+
+/* Toast succès / erreur */
+.action-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  animation: slide-in-toast 0.3s ease;
+}
+
+@keyframes slide-in-toast {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.action-toast.success {
+  border-color: #00FF4166;
+  background: #00FF4110;
+  color: #00FF41;
+}
+
+.action-toast.error {
+  border-color: #ff444466;
+  background: #ff444411;
+  color: #ff4444;
+}
+
+.toast-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.toast-text {
+  flex: 1;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+/* Statuts rapport / email */
+.status-cell {
+  white-space: nowrap;
+}
+
+.status-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-icon {
+  font-size: 14px;
+  line-height: 1;
+  width: 18px;
+  text-align: center;
+}
+
+.pdf-icon {
+  filter: none;
+}
+
+.email-icon {
+  color: #00FF41;
+}
+
+.status-badge {
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+
+.status-badge.idle {
+  border-color: #00FF4133;
+  color: #00FF4166;
+}
+
+.status-badge.pending {
+  border-color: #ffaa00;
+  color: #ffaa00;
+}
+
+/* Spinner / loading indicators */
+.inline-loader,
+.btn-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid #00FF4133;
+  border-top-color: #00FF41;
+  border-radius: 50%;
+  animation: spin-loader 0.7s linear infinite;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.btn-spinner {
+  width: 11px;
+  height: 11px;
+  border-color: currentColor;
+  border-top-color: transparent;
+  opacity: 0.9;
+}
+
+@keyframes spin-loader {
+  to { transform: rotate(360deg); }
+}
+
+/* Section rapport dans le modal */
+.rapport-section {
+  margin-top: 16px;
+}
+
+.rapport-status-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 14px;
+}
+
+.rapport-status-row .status-with-icon {
+  padding: 8px 0;
+  border-bottom: 1px solid #00FF4111;
+}
+
+.rapport-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-btn.pdf-download-btn {
+  border-color: #00d4ff;
+  color: #00d4ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.modal-btn.pdf-download-btn:hover:not([disabled]) {
+  background: #00d4ff11;
+}
+
+.modal-btn.email-send-btn {
+  border-color: #00FF41;
+  color: #00FF41;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.modal-btn.email-send-btn:hover:not([disabled]) {
+  background: #00FF4111;
+}
+
+.modal-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .no-results {
