@@ -2,7 +2,9 @@ import { Component, OnInit, OnDestroy, ViewEncapsulation, ChangeDetectorRef } fr
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
-import { ScannerService } from '../../services/scanner.service'; // 🆕 Import el service mte3ik s7i7!
+import { ScannerService } from '../../services/scanner.service';
+import { ToastService } from '../../services/toast.service';
+import { NotificationService } from '../../services/notification.service';
 import { ScanResponse, SiteReport, ZapFinding } from '../../models/scan.model';
 
 @Component({
@@ -38,9 +40,11 @@ export class Scanner implements OnInit, OnDestroy {
     { id: 'zap', label: 'OWASP ZAP Baseline', checked: false },
     { id: 'nvd', label: 'NVD (National Vulnerability Database)', checked: true },
   ];
-  // 🆕 Injecti el ScannerService hna (na3mlo remove lil HttpClient mel component direct)
+
   constructor(
     private scannerService: ScannerService,
+    private toastService: ToastService,
+    private notifService: NotificationService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -101,24 +105,29 @@ export class Scanner implements OnInit, OnDestroy {
       next: (result: ScanResponse) => {
         this.scanning = false;
 
-        // 🟢 Extraction s7i7a mta3 el rapport global khater Django wraps it in 'rapport'
         if (result && result.rapport && result.rapport.length > 0) {
-          this.scanResult = result.rapport[0]; // Na9raw el site results direkt kima y7eb el html
+          this.scanResult = result.rapport[0];
         } else {
-          this.scanResult = result as SiteReport; // Fallback filter
+          this.scanResult = result as SiteReport;
         }
 
-        // 🟢 Récupération des alertes OWASP ZAP (racine ou à l'intérieur du rapport)
         this.zapFindings = this.extraireZapFindings(result, this.scanResult);
 
-        console.log('Rapport CYBERSCAN chargé avec succès:', this.scanResult);
-        console.log('Alertes OWASP ZAP:', this.zapFindings);
+        this.toastService.success(`Scan terminé pour ${target}`);
+        this.notifService.fetchUnreadCount();
+
+        const score = this.scanResult?.score_risque_ia ?? (this.scanResult as any)?.score;
+        if (score != null && Number(score) >= 7) {
+          this.toastService.warning(`Nouvelle CVE critique détectée sur ${target}`);
+        }
+
         this.cdr.detectChanges();
       },
       error: (err) => {
         this.scanning = false;
         console.error('Erreur scan:', err);
         this.errorMsg = 'Erreur lors du scan. Vérifiez la connexion VM/SSH.';
+        this.toastService.error(this.errorMsg);
         this.cdr.detectChanges();
       },
     });

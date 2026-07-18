@@ -10,12 +10,18 @@
       <li><a routerLink="/scanner" routerLinkActive="active">SCANNER</a></li>
       <li><a routerLink="/historique" routerLinkActive="active">HISTORIQUE</a></li>
       <li><a routerLink="/alertes" routerLinkActive="active">ALERTES</a></li>
+      <li><a routerLink="/notifications" routerLinkActive="active">NOTIFICATIONS</a></li>
       <li *ngIf="currentUser?.role === 'admin'">
         <a routerLink="/clients" routerLinkActive="active">CLIENTS</a>
       </li>
     </ul>
 
     <div class="nav-right">
+      <a routerLink="/notifications" class="notif-bell" title="Notifications">
+        🔔
+        <span class="notif-badge-count" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+      </a>
+
       <button class="theme-toggle" (click)="toggleTheme()">
         {{ isDark ? '☀ LIGHT' : '☾ DARK' }}
       </button>

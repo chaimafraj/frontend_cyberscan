@@ -6,6 +6,9 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { AuthService } from '../../services/auth.service';
 import { ScannerService } from '../../services/scanner.service';
+import { ExportService } from '../../services/export.service';
+import { ToastService } from '../../services/toast.service';
+import { ChatbotContextService } from '../../services/chatbot-context.service';
 import { VulnManuelleForm } from '../vuln-manuelle-form/vuln-manuelle-form';
 
 @Component({
@@ -48,14 +51,18 @@ class Historique implements OnInit, OnDestroy {
     private http: HttpClient,
     private authService: AuthService,
     private scannerService: ScannerService,
+    private exportService: ExportService,
+    private toastService: ToastService,
+    private chatbotContext: ChatbotContextService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'admin';
     this.displayedColumns = this.isAdmin
-      ? ['client', 'domaine', 'date', 'protocols', 'score', 'statut', 'rapport', 'email', 'actions']
-      : ['domaine', 'date', 'protocols', 'score', 'statut', 'rapport', 'email', 'actions'];
+      ? ['client', 'domaine', 'date', 'protocols', 'score', 'statut', 'rapport', 'email', 'exports', 'actions']
+      : ['domaine', 'date', 'protocols', 'score', 'statut', 'rapport', 'email', 'exports', 'actions'];
+    this.chatbotContext.clearScanContext();
     this.startMatrix();
     this.loadScans();
   }
@@ -63,6 +70,7 @@ class Historique implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.matrixInterval) clearInterval(this.matrixInterval);
     if (this.actionMessageTimer) clearTimeout(this.actionMessageTimer);
+    this.chatbotContext.clearScanContext();
   }
 
   loadScans(page = 1) {
@@ -240,6 +248,7 @@ class Historique implements OnInit, OnDestroy {
         scan.pdf_disponible = true;
         scan.has_rapport = true;
         this.showActionMessage('success', `Rapport PDF de ${scan.domaine} téléchargé avec succès.`);
+        this.toastService.success(`Rapport PDF de ${scan.domaine} téléchargé avec succès.`);
         this.refreshScanRow(scan);
       },
       error: async (err) => {
@@ -251,6 +260,7 @@ class Historique implements OnInit, OnDestroy {
           `Échec du téléchargement du rapport PDF pour ${scan.domaine}.`,
         );
         this.showActionMessage('error', msg);
+        this.toastService.error(msg);
         this.refreshScanRow(scan);
       },
     });
@@ -275,12 +285,11 @@ class Historique implements OnInit, OnDestroy {
         scan.emailSending = false;
         scan.emailStatus = 'envoye';
         const recipients = (res?.recipients || []).join(', ');
-        this.showActionMessage(
-          'success',
-          recipients
-            ? `Rapport de ${scan.domaine} envoyé à ${recipients}.`
-            : `Rapport de ${scan.domaine} envoyé par email avec succès.`,
-        );
+        const emailMsg = recipients
+          ? `Rapport de ${scan.domaine} envoyé à ${recipients}.`
+          : `Rapport de ${scan.domaine} envoyé par email avec succès.`;
+        this.showActionMessage('success', emailMsg);
+        this.toastService.success(emailMsg);
         this.refreshScanRow(scan);
       },
       error: (err) => {
@@ -291,8 +300,42 @@ class Historique implements OnInit, OnDestroy {
           `Échec de l'envoi du rapport par email pour ${scan.domaine}.`,
         );
         this.showActionMessage('error', msg);
+        this.toastService.error(msg);
         this.refreshScanRow(scan);
       },
+    });
+  }
+
+  exportPdf(scan: any, event?: Event) {
+    event?.stopPropagation();
+    this.exportService.downloadPdf(scan.id).subscribe({
+      next: (blob) => {
+        this.exportService.triggerDownload(blob, `rapport_${scan.id}_${scan.domaine || 'scan'}.pdf`);
+        this.toastService.success(`Rapport PDF généré pour ${scan.domaine}`);
+      },
+      error: () => this.toastService.error(`Échec export PDF pour ${scan.domaine}`),
+    });
+  }
+
+  exportExcel(scan: any, event?: Event) {
+    event?.stopPropagation();
+    this.exportService.downloadExcel(scan.id).subscribe({
+      next: (blob) => {
+        this.exportService.triggerDownload(blob, `rapport_${scan.id}_${scan.domaine || 'scan'}.xlsx`);
+        this.toastService.success(`Rapport Excel généré pour ${scan.domaine}`);
+      },
+      error: () => this.toastService.error(`Échec export Excel pour ${scan.domaine}`),
+    });
+  }
+
+  exportJson(scan: any, event?: Event) {
+    event?.stopPropagation();
+    this.exportService.downloadJson(scan.id).subscribe({
+      next: (blob) => {
+        this.exportService.triggerDownload(blob, `rapport_${scan.id}_${scan.domaine || 'scan'}.json`);
+        this.toastService.success(`Rapport JSON généré pour ${scan.domaine}`);
+      },
+      error: () => this.toastService.error(`Échec export JSON pour ${scan.domaine}`),
     });
   }
 
@@ -325,12 +368,14 @@ class Historique implements OnInit, OnDestroy {
     } else {
       this.selectedScan.riskClass = 'risk-low';
     }
+    this.chatbotContext.setScanContext(scan);
     this.loadVulnsManuelles(scan.id);
   }
 
   closeModal() {
     this.selectedScan = null;
     this.selectedProtocol = null;
+    this.chatbotContext.clearScanContext();
   }
 
   deleteScan(scan: any, event: Event) {

@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
@@ -10,11 +12,16 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './navbar.scss',
   standalone: true,
 })
-export class Navbar implements OnInit {
+export class Navbar implements OnInit, OnDestroy {
   isDark = true;
   currentUser: any = null;
+  unreadCount = 0;
+  private unreadSub?: Subscription;
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private notifService: NotificationService,
+  ) {}
 
   ngOnInit() {
     const savedTheme = sessionStorage.getItem('theme') || 'dark';
@@ -23,7 +30,21 @@ export class Navbar implements OnInit {
 
     this.authService.currentUser$.subscribe((user) => {
       this.currentUser = user;
+      if (user) {
+        this.notifService.startPolling();
+      } else {
+        this.notifService.stopPolling();
+        this.unreadCount = 0;
+      }
     });
+
+    this.unreadSub = this.notifService.unreadCount.subscribe((count) => {
+      this.unreadCount = count;
+    });
+  }
+
+  ngOnDestroy() {
+    this.unreadSub?.unsubscribe();
   }
 
   toggleTheme() {

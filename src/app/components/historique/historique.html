@@ -23,6 +23,13 @@
       </div>
     }
 
+    <div class="export-bar">
+      <span class="export-bar-label">EXPORTS:</span>
+      <button type="button" class="export-global-btn" (click)="exportPdf(selectedScan || scans[0], $event)" [disabled]="!(selectedScan || scans.length)">📄 PDF</button>
+      <button type="button" class="export-global-btn" (click)="exportExcel(selectedScan || scans[0], $event)" [disabled]="!(selectedScan || scans.length)">📊 Excel</button>
+      <button type="button" class="export-global-btn" (click)="exportJson(selectedScan || scans[0], $event)" [disabled]="!(selectedScan || scans.length)">📦 JSON</button>
+    </div>
+
     <div class="filter-bar">
       <input
         class="cyber-input"
@@ -119,6 +126,15 @@
                 {{ getEmailStatusLabel(scan.emailStatus) }}
               </span>
             </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="exports">
+          <th mat-header-cell *matHeaderCellDef>EXPORTS</th>
+          <td mat-cell *matCellDef="let scan" class="actions export-actions">
+            <button type="button" class="action-btn export-btn" (click)="exportPdf(scan, $event)" title="Export PDF">📄</button>
+            <button type="button" class="action-btn export-btn" (click)="exportExcel(scan, $event)" title="Export Excel">📊</button>
+            <button type="button" class="action-btn export-btn" (click)="exportJson(scan, $event)" title="Export JSON">📦</button>
           </td>
         </ng-container>
 
@@ -286,6 +302,15 @@
                   ✉ Envoyer le Rapport par Email
                 }
               </button>
+            </div>
+
+            <div class="export-section">
+              <span class="label">TÉLÉCHARGER:</span>
+              <div class="export-actions-row">
+                <button type="button" class="modal-btn export-dl-btn" (click)="exportPdf(selectedScan, $event)">📄 PDF</button>
+                <button type="button" class="modal-btn export-dl-btn" (click)="exportExcel(selectedScan, $event)">📊 Excel</button>
+                <button type="button" class="modal-btn export-dl-btn" (click)="exportJson(selectedScan, $event)">📦 JSON</button>
+              </div>
             </div>
           </div>
 

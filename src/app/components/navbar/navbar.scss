@@ -201,3 +201,39 @@
   border-color: #ff4444;
   box-shadow: 0 0 8px #ff444433;
 }
+
+.notif-bell {
+  position: relative;
+  font-size: 18px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.notif-bell:hover {
+  transform: scale(1.15);
+}
+
+.notif-badge-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ff4444;
+  color: #fff;
+  font-size: 9px;
+  font-family: 'Share Tech Mono', monospace;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  box-shadow: 0 0 8px #ff444488;
+  animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 4px #ff4444; }
+  50% { box-shadow: 0 0 12px #ff4444; }
+}
