@@ -21,17 +21,19 @@
       <li><a routerLink="/scanner" routerLinkActive="active" (click)="closeMenu()">SCANNER</a></li>
       <li><a routerLink="/historique" routerLinkActive="active" (click)="closeMenu()">HISTORIQUE</a></li>
       <li><a routerLink="/alertes" routerLinkActive="active" (click)="closeMenu()">ALERTES</a></li>
-      <li><a routerLink="/notifications" routerLinkActive="active" (click)="closeMenu()">NOTIFICATIONS</a></li>
       <li *ngIf="currentUser?.role === 'admin'">
         <a routerLink="/clients" routerLinkActive="active" (click)="closeMenu()">CLIENTS</a>
       </li>
     </ul>
 
     <div class="nav-right">
-      <a routerLink="/notifications" class="notif-bell" title="Notifications">
-        🔔
+      <span class="notif-bell" title="Notifications" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+          <path d="M10 21h4"></path>
+        </svg>
         <span class="notif-badge-count" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
-      </a>
+      </span>
 
       <button class="theme-toggle" (click)="toggleTheme()">
         {{ isDark ? '☀ LIGHT' : '☾ DARK' }}

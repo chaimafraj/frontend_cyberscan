@@ -216,6 +216,8 @@
 
 .notif-bell {
   position: relative;
+  display: inline-flex;
+  align-items: center;
   font-size: 18px;
   text-decoration: none;
   cursor: pointer;
@@ -348,4 +350,8 @@
   .user-info {
     gap: 8px;
   }
+}
+.notif-bell svg {
+  width: 20px;
+  height: 20px;
 }
