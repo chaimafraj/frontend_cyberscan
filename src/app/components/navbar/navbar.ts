@@ -14,6 +14,7 @@ import { Subscription } from 'rxjs';
 })
 export class Navbar implements OnInit, OnDestroy {
   isDark = true;
+  isMenuOpen = false;
   currentUser: any = null;
   unreadCount = 0;
   private unreadSub?: Subscription;
@@ -52,6 +53,14 @@ export class Navbar implements OnInit, OnDestroy {
     const theme = this.isDark ? 'dark' : 'light';
     sessionStorage.setItem('theme', theme);
     document.body.setAttribute('data-theme', theme);
+  }
+
+  toggleMenu() {
+    this.isMenuOpen = !this.isMenuOpen;
+  }
+
+  closeMenu() {
+    this.isMenuOpen = false;
   }
 
   logout() {
