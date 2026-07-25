@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ScannerService } from '../../services/scanner.service';
+import { DataSyncService } from '../../services/data-sync.service';
+import { finalize, Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,25 +20,37 @@ export class Dashboard implements OnInit, OnDestroy {
   moyennes = 0;
   totalScans = 0;
   totalCve = 0;
+  loadingStats = true;
   recentScans: any[] = [];
   userRole: string = '';
 
   private matrixInterval: any;
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
     private scannerService: ScannerService,
     private authService: AuthService,
+    private dataSync: DataSyncService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     this.userRole = this.authService.getUserRole();
     this.loadDashboardData();
+    this.dataSync.dashboardRefresh$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.loadDashboardData());
     this.startMatrix();
   }
 
   loadDashboardData() {
-    this.scannerService.getDashboardStats().subscribe({
+    this.loadingStats = true;
+    this.scannerService.getDashboardStats().pipe(
+      finalize(() => {
+        this.loadingStats = false;
+        this.cdr.detectChanges();
+      }),
+    ).subscribe({
       next: (data) => {
         console.log('Data reçue du Backend Django:', data);
 
@@ -57,6 +71,8 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
     if (this.matrixInterval) clearInterval(this.matrixInterval);
   }
 

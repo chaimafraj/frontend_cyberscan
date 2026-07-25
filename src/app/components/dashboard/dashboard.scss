@@ -107,6 +107,22 @@
   color: #00FF41;
 }
 
+.stat-skeleton {
+  display: inline-block;
+  width: 54px;
+  height: 32px;
+  border-radius: 4px;
+  vertical-align: middle;
+  background: linear-gradient(90deg, #00ff4114 25%, #00ff4140 50%, #00ff4114 75%);
+  background-size: 200% 100%;
+  animation: stat-loading 1.2s infinite linear;
+}
+
+@keyframes stat-loading {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
 .stat-card.danger .stat-num { color: #ff4444; }
 .stat-card.warn .stat-num   { color: #ffaa00; }
 

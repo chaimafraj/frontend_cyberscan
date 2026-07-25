@@ -202,3 +202,6 @@
   border-color: #00FF41;
   color: #00FF41;
 }
+
+.stat-skeleton { display: inline-block; width: 42px; height: 28px; border-radius: 4px; vertical-align: middle; background: linear-gradient(90deg, #00ff4114 25%, #00ff4140 50%, #00ff4114 75%); background-size: 200% 100%; animation: alert-stat-loading 1.2s infinite linear; }
+@keyframes alert-stat-loading { from { background-position: 200% 0; } to { background-position: -200% 0; } }

@@ -30,7 +30,7 @@ class Historique implements OnInit, OnDestroy {
   selectedProtocol: any = null;
   editMode = false;
   editDomaine = '';
-  loading = false;
+  loading = true;
 
   vulnsManuelles: any[] = [];
   showVulnForm = false;

@@ -15,7 +15,7 @@ export class Alertes implements OnInit, OnDestroy {
 
   alertes: any[] = [];
   stats = { critiques: 0, moyennes: 0, faibles: 0, total: 0 };
-  loading = false;
+  loading = true;
 
   constructor(
     private http: HttpClient,

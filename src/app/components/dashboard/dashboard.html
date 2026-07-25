@@ -11,19 +11,31 @@
 
     <div class="stats-grid">
       <div class="stat-card danger">
-        <div class="stat-num">{{ critiques }}</div>
+        <div class="stat-num">
+          @if (loadingStats) { <span class="stat-skeleton" aria-label="Chargement"></span> }
+          @else { {{ critiques }} }
+        </div>
         <div class="stat-label">CRITIQUES</div>
       </div>
       <div class="stat-card warn">
-        <div class="stat-num">{{ moyennes }}</div>
+        <div class="stat-num">
+          @if (loadingStats) { <span class="stat-skeleton" aria-label="Chargement"></span> }
+          @else { {{ moyennes }} }
+        </div>
         <div class="stat-label">MOYENNES</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num">{{ totalScans }}</div>
+        <div class="stat-num">
+          @if (loadingStats) { <span class="stat-skeleton" aria-label="Chargement"></span> }
+          @else { {{ totalScans }} }
+        </div>
         <div class="stat-label">SCANS TOTAL</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num">{{ totalCve }}</div>
+        <div class="stat-num">
+          @if (loadingStats) { <span class="stat-skeleton" aria-label="Chargement"></span> }
+          @else { {{ totalCve }} }
+        </div>
         <div class="stat-label">CVE DÉTECTÉS</div>
       </div>
     </div>
