@@ -19,4 +19,8 @@ describe('Dashboard', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should not display Nuclei as a scan option', () => {
+    expect(component.options.some((option) => option.id === 'nuclei')).toBeFalse();
+  });
 });

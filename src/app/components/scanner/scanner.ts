@@ -35,7 +35,6 @@ export class Scanner implements OnInit, OnDestroy {
     { id: 'nmap', label: 'NMAP SSL', checked: true },
     { id: 'openssl', label: 'OPENSSL', checked: true },
     { id: 'ssllabs', label: 'SSL LABS API', checked: false },
-    { id: 'nuclei', label: 'NUCLEI', checked: true },
     { id: 'whatweb', label: 'WHATWEB', checked: false },
     { id: 'zap', label: 'OWASP ZAP Baseline', checked: false },
     { id: 'nvd', label: 'NVD (National Vulnerability Database)', checked: true },
@@ -89,7 +88,7 @@ export class Scanner implements OnInit, OnDestroy {
     this.zapFindings = [];
     this.errorMsg = '';
 
-    // On envoie l'état de toutes les cases (zap, nuclei, nvd, ...) dans options.<id>
+    // On envoie l'état de toutes les cases disponibles dans options.<id>
     const options = this.options.reduce(
       (acc, opt) => {
         acc[opt.id] = opt.checked;
