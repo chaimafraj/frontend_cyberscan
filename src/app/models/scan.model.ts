@@ -28,7 +28,17 @@ export interface SiteReport {
 }
 
 // La réponse globale de POST /api/scans/
+export interface QueuedScan {
+  scan_id: number;
+  task_id: string;
+  domaine: string;
+  status: 'PENDING' | 'RUNNING';
+  status_url: string;
+}
+
 export interface ScanResponse {
+  scans?: QueuedScan[];
+  tracking_ids?: number[];
   rapport?: SiteReport[];
   zap_findings?: ZapFinding[]; // ZAP peut aussi être renvoyé à la racine
   [key: string]: any;

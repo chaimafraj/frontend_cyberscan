@@ -42,7 +42,7 @@
 
     <div class="scan-status" *ngIf="scanning">
       <div class="status-text">
-        <span class="blink">&gt;</span> SCAN EN COURS: {{ targetUrl }}
+        <span class="blink">&gt;</span> {{ scanStatus === 'PENDING' ? 'SCAN EN FILE D’ATTENTE' : 'SCAN EN COURS' }}: {{ targetUrl }}
         <span class="cursor"></span>
       </div>
       <div class="status-bar">

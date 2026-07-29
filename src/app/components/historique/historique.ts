@@ -91,10 +91,12 @@ class Historique implements OnInit, OnDestroy {
         this.scans = list.map((s: any) => this.mapScanUi(s));
         this.dataSource.data = this.scans;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('API Error:', err);
         this.loading = false;
+        this.cdr.detectChanges();
       },
     });
   }

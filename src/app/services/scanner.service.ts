@@ -25,6 +25,16 @@ export class ScannerService {
     return this.http.post<ScanResponse>(this.apiUrl, { url: url, options: options });
   }
 
+  getScan(scanId: number): Observable<any> {
+    return this.http.get<any>(this.apiUrl + scanId + '/');
+  }
+
+  getRecentScans(): Observable<{ results: any[] }> {
+    return this.http.get<{ results: any[] }>(this.apiUrl, {
+      params: { page: '1', page_size: '10' },
+    });
+  }
+
   getVulnTemplates(): Observable<any> {
     return this.http.get<any>('http://127.0.0.1:8000/api/vuln-templates/');
   }

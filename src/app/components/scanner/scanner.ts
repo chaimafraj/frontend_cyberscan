@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Subscription, switchMap, timer } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
@@ -6,6 +7,8 @@ import { ScannerService } from '../../services/scanner.service';
 import { ToastService } from '../../services/toast.service';
 import { NotificationService } from '../../services/notification.service';
 import { ScanResponse, SiteReport, ZapFinding } from '../../models/scan.model';
+
+type ScanUiStatus = 'IDLE' | 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
 @Component({
   selector: 'app-scanner',
@@ -24,6 +27,8 @@ export class Scanner implements OnInit, OnDestroy {
   zapRequested = false;
   errorMsg = '';
   targetError = '';
+  scanStatus: ScanUiStatus = 'IDLE';
+  private scanPolling?: Subscription;
   private matrixInterval: any;
 
   // Accepte : domaine (google.com), IPv4 (1.2.3.4), ou host:port (esprit.tn:8443)
@@ -49,9 +54,11 @@ export class Scanner implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.startMatrix();
+    this.resumeLatestScan();
   }
 
   ngOnDestroy() {
+    this.scanPolling?.unsubscribe();
     if (this.matrixInterval) clearInterval(this.matrixInterval);
   }
 
@@ -79,16 +86,47 @@ export class Scanner implements OnInit, OnDestroy {
     return port && port !== '443' ? `${host}:${port}` : host;
   }
 
+  private resumeLatestScan(): void {
+    this.scannerService.getRecentScans().subscribe({
+      next: (response) => {
+        if (this.scanning) return;
+        const scans = Array.isArray(response?.results) ? response.results : [];
+        const activeScan =
+          scans.find((scan) => String(scan?.status).toUpperCase() === 'RUNNING') ??
+          scans.find((scan) => String(scan?.status).toUpperCase() === 'PENDING');
+
+        if (activeScan?.id) {
+          this.targetUrl = activeScan.domaine || this.targetUrl;
+          this.scanning = true;
+          this.scanStatus = String(activeScan.status).toUpperCase() as ScanUiStatus;
+          this.pollScan(activeScan.id, activeScan.domaine || this.targetUrl);
+          this.cdr.detectChanges();
+          return;
+        }
+
+        const lastCompleted = scans.find(
+          (scan) => String(scan?.status).toUpperCase() === 'COMPLETED' && scan?.resultats_ssl,
+        );
+        if (lastCompleted) {
+          this.displayCompletedScan(lastCompleted, lastCompleted.domaine, false);
+        }
+      },
+      error: () => {
+        // Le lancement manuel reste disponible si l'historique est momentanément inaccessible.
+      },
+    });
+  }
   lancerScan() {
     if (!this.validateTarget()) return;
 
     const target = this.buildTarget();
+    this.scanPolling?.unsubscribe();
     this.scanning = true;
+    this.scanStatus = 'PENDING';
     this.scanResult = null;
     this.zapFindings = [];
     this.errorMsg = '';
 
-    // On envoie l'état de toutes les cases disponibles dans options.<id>
     const options = this.options.reduce(
       (acc, opt) => {
         acc[opt.id] = opt.checked;
@@ -97,39 +135,94 @@ export class Scanner implements OnInit, OnDestroy {
       {} as Record<string, boolean>,
     );
 
-    // OWASP ZAP pilote l'affichage de l'étape et de la carte dédiées
     this.zapRequested = options['zap'] ?? false;
 
     this.scannerService.demarrerScan(target, options).subscribe({
       next: (result: ScanResponse) => {
-        this.scanning = false;
-
-        if (result && result.rapport && result.rapport.length > 0) {
-          this.scanResult = result.rapport[0];
-        } else {
-          this.scanResult = result as SiteReport;
+        const queuedScan = result?.scans?.[0];
+        if (queuedScan?.scan_id) {
+          this.scanStatus = queuedScan.status || 'PENDING';
+          this.toastService.success(`Scan ajouté à la file d’attente pour ${target}`);
+          this.pollScan(queuedScan.scan_id, target);
+          this.cdr.detectChanges();
+          return;
         }
 
-        this.zapFindings = this.extraireZapFindings(result, this.scanResult);
-
-        this.toastService.success(`Scan terminé pour ${target}`);
-        this.notifService.fetchUnreadCount();
-
-        const score = this.scanResult?.score_risque_ia ?? (this.scanResult as any)?.score;
-        if (score != null && Number(score) >= 7) {
-          this.toastService.warning(`Nouvelle CVE critique détectée sur ${target}`);
-        }
-
-        this.cdr.detectChanges();
+        this.displayCompletedScan(result, target);
       },
       error: (err) => {
-        this.scanning = false;
-        console.error('Erreur scan:', err);
-        this.errorMsg = 'Erreur lors du scan. Vérifiez la connexion VM/SSH.';
-        this.toastService.error(this.errorMsg);
-        this.cdr.detectChanges();
+        this.stopWithError(
+          err?.error?.error || 'Erreur lors du lancement. Vérifiez Redis et le worker Celery.',
+        );
       },
     });
+  }
+
+  private pollScan(scanId: number, target: string): void {
+    this.scanPolling = timer(0, 3000)
+      .pipe(switchMap(() => this.scannerService.getScan(scanId)))
+      .subscribe({
+        next: (scan) => {
+          const status = String(scan?.status || 'PENDING').toUpperCase();
+          this.scanStatus = status as ScanUiStatus;
+
+
+          if (status === 'COMPLETED') {
+            this.scanPolling?.unsubscribe();
+            this.displayCompletedScan(scan, target);
+          } else if (status === 'FAILED') {
+            this.scanPolling?.unsubscribe();
+            this.stopWithError(scan?.error_message || `Le scan de ${target} a échoué.`);
+          } else {
+            this.cdr.detectChanges();
+          }
+        },
+        error: (err) => {
+          this.scanPolling?.unsubscribe();
+          this.stopWithError(
+            err?.error?.error || 'Impossible de suivre le statut du scan.',
+          );
+        },
+      });
+  }
+
+  private displayCompletedScan(result: any, target: string, notify = true): void {
+    this.scanning = false;
+    this.scanStatus = 'COMPLETED';
+
+    if (result?.resultats_ssl && typeof result.resultats_ssl === 'object') {
+      this.scanResult = {
+        ...result.resultats_ssl,
+        id: result.id,
+        domaine: result.domaine || target,
+        score_risque_ia: result.score_risque_ia,
+        cves: result.cves || result.resultats_ssl.cves || [],
+      } as SiteReport;
+    } else if (result?.rapport?.length > 0) {
+      this.scanResult = result.rapport[0];
+    } else {
+      this.scanResult = result as SiteReport;
+    }
+
+    this.zapFindings = this.extraireZapFindings(result, this.scanResult);
+    if (notify) {
+      this.toastService.success(`Scan terminé pour ${target}`);
+      this.notifService.fetchUnreadCount();
+
+      const score = this.scanResult?.score_risque_ia ?? (this.scanResult as any)?.score;
+      if (score != null && Number(score) >= 7) {
+        this.toastService.warning(`Nouvelle CVE critique détectée sur ${target}`);
+      }
+    }
+    this.cdr.detectChanges();
+  }
+
+  private stopWithError(message: string): void {
+    this.scanning = false;
+    this.scanStatus = 'FAILED';
+    this.errorMsg = message;
+    this.toastService.error(message);
+    this.cdr.detectChanges();
   }
 
   // Cherche zap_findings dans la réponse racine puis dans le rapport site
@@ -137,7 +230,6 @@ export class Scanner implements OnInit, OnDestroy {
     const findings = root?.zap_findings ?? site?.zap_findings ?? [];
     return Array.isArray(findings) ? findings : [];
   }
-
   // Normalise le niveau de risque pour le style CSS (high / medium / low / info)
   riskClass(risk: string): string {
     const r = (risk || '').toLowerCase();
