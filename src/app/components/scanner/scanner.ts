@@ -8,7 +8,7 @@ import { ToastService } from '../../services/toast.service';
 import { NotificationService } from '../../services/notification.service';
 import { ScanResponse, SiteReport, ZapFinding } from '../../models/scan.model';
 
-type ScanUiStatus = 'IDLE' | 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+type ScanUiStatus = 'IDLE' | 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 @Component({
   selector: 'app-scanner',
@@ -22,6 +22,9 @@ export class Scanner implements OnInit, OnDestroy {
   targetUrl = '';
   port = '443';
   scanning = false;
+  cancelling = false;
+  cancelMessage = '';
+  activeScanId: number | null = null;
   scanResult: SiteReport | null = null;
   zapFindings: ZapFinding[] = [];
   zapRequested = false;
@@ -98,29 +101,36 @@ export class Scanner implements OnInit, OnDestroy {
         if (activeScan?.id) {
           this.targetUrl = activeScan.domaine || this.targetUrl;
           this.scanning = true;
+          this.activeScanId = Number(activeScan.id);
           this.scanStatus = String(activeScan.status).toUpperCase() as ScanUiStatus;
           this.pollScan(activeScan.id, activeScan.domaine || this.targetUrl);
           this.cdr.detectChanges();
           return;
         }
 
-        const lastCompleted = scans.find(
-          (scan) => String(scan?.status).toUpperCase() === 'COMPLETED' && scan?.resultats_ssl,
-        );
-        if (lastCompleted) {
-          this.displayCompletedScan(lastCompleted, lastCompleted.domaine, false);
-        }
+
       },
       error: () => {
         // Le lancement manuel reste disponible si l'historique est momentanément inaccessible.
       },
     });
   }
+  nouveauScan(): void {
+    this.scanResult = null;
+    this.zapFindings = [];
+    this.scanStatus = 'IDLE';
+    this.errorMsg = '';
+    this.cancelMessage = '';
+    this.cdr.detectChanges();
+  }
   lancerScan() {
     if (!this.validateTarget()) return;
 
     const target = this.buildTarget();
     this.scanPolling?.unsubscribe();
+    this.activeScanId = null;
+    this.cancelling = false;
+    this.cancelMessage = '';
     this.scanning = true;
     this.scanStatus = 'PENDING';
     this.scanResult = null;
@@ -141,6 +151,7 @@ export class Scanner implements OnInit, OnDestroy {
       next: (result: ScanResponse) => {
         const queuedScan = result?.scans?.[0];
         if (queuedScan?.scan_id) {
+          this.activeScanId = Number(queuedScan.scan_id);
           this.scanStatus = queuedScan.status || 'PENDING';
           this.toastService.success(`Scan ajouté à la file d’attente pour ${target}`);
           this.pollScan(queuedScan.scan_id, target);
@@ -158,6 +169,32 @@ export class Scanner implements OnInit, OnDestroy {
     });
   }
 
+  annulerScan(): void {
+    if (!this.activeScanId || !this.scanning || this.cancelling) return;
+
+    const scanId = this.activeScanId;
+    this.cancelling = true;
+    this.scannerService.cancelScan(scanId).subscribe({
+      next: () => {
+        this.scanPolling?.unsubscribe();
+        this.activeScanId = null;
+        this.scanning = false;
+        this.cancelling = false;
+        this.scanStatus = 'CANCELLED';
+        this.cancelMessage = 'Le scan a été annulé avec succès.';
+        this.toastService.info(this.cancelMessage);
+        this.notifService.refreshNotifications();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.cancelling = false;
+        const error = err?.error?.error;
+        const message = typeof error === 'string' ? error : error?.message;
+        this.toastService.error(message || 'Impossible d’annuler ce scan.');
+        this.cdr.detectChanges();
+      },
+    });
+  }
   private pollScan(scanId: number, target: string): void {
     this.scanPolling = timer(0, 3000)
       .pipe(switchMap(() => this.scannerService.getScan(scanId)))
@@ -173,6 +210,14 @@ export class Scanner implements OnInit, OnDestroy {
           } else if (status === 'FAILED') {
             this.scanPolling?.unsubscribe();
             this.stopWithError(scan?.error_message || `Le scan de ${target} a échoué.`);
+          } else if (status === 'CANCELLED') {
+            this.scanPolling?.unsubscribe();
+            this.activeScanId = null;
+            this.scanning = false;
+            this.cancelling = false;
+            this.cancelMessage = 'Le scan a été annulé.';
+            this.notifService.refreshNotifications();
+            this.cdr.detectChanges();
           } else {
             this.cdr.detectChanges();
           }
@@ -187,6 +232,8 @@ export class Scanner implements OnInit, OnDestroy {
   }
 
   private displayCompletedScan(result: any, target: string, notify = true): void {
+    this.activeScanId = null;
+    this.cancelling = false;
     this.scanning = false;
     this.scanStatus = 'COMPLETED';
 
@@ -218,6 +265,8 @@ export class Scanner implements OnInit, OnDestroy {
   }
 
   private stopWithError(message: string): void {
+    this.activeScanId = null;
+    this.cancelling = false;
     this.scanning = false;
     this.scanStatus = 'FAILED';
     this.errorMsg = message;
@@ -242,7 +291,8 @@ export class Scanner implements OnInit, OnDestroy {
     setTimeout(() => {
       const canvas = document.getElementById('scanner-matrix') as HTMLCanvasElement;
       if (!canvas) return;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       const cols = Math.floor(canvas.width / 14);

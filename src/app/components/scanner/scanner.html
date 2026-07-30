@@ -9,7 +9,7 @@
       <p class="page-sub">Analyse complète des configurations SSL/TLS</p>
     </div>
 
-    <div class="scan-form">
+    <div class="scan-form" *ngIf="!scanResult">
       <div class="input-group">
         <label>DOMAINE CIBLE</label>
         <input
@@ -31,18 +31,32 @@
       <button class="cyber-btn" (click)="lancerScan()" [disabled]="scanning">
         {{ scanning ? '⏳ SCAN EN COURS...' : '▶ LANCER LE SCAN' }}
       </button>
+      <button
+        *ngIf="scanning"
+        class="cyber-btn cancel-btn"
+        type="button"
+        (click)="annulerScan()"
+        [disabled]="cancelling"
+      >
+        {{ cancelling ? '⏳ ANNULATION...' : '✕ ANNULER' }}
+      </button>
     </div>
 
-    <div class="options-grid">
+    <div class="options-grid" *ngIf="!scanResult">
       <div class="option-card" *ngFor="let opt of options">
         <input type="checkbox" [id]="opt.id" [(ngModel)]="opt.checked"/>
         <label [for]="opt.id">{{ opt.label }}</label>
       </div>
     </div>
 
+    <div class="result-actions" *ngIf="scanResult && !scanning">
+      <span>✓ SCAN TERMINÉ — {{ scanResult.domaine || targetUrl }}</span>
+      <button class="cyber-btn" type="button" (click)="nouveauScan()">＋ NOUVEAU SCAN</button>
+    </div>
+
     <div class="scan-status" *ngIf="scanning">
       <div class="status-text">
-        <span class="blink">&gt;</span> {{ scanStatus === 'PENDING' ? 'SCAN EN FILE D’ATTENTE' : 'SCAN EN COURS' }}: {{ targetUrl }}
+        <span class="blink">&gt;</span> {{ cancelling ? 'ANNULATION EN COURS' : (scanStatus === 'PENDING' ? 'SCAN EN FILE D’ATTENTE' : 'SCAN EN COURS') }}: {{ targetUrl }}
         <span class="cursor"></span>
       </div>
       <div class="status-bar">
@@ -139,6 +153,7 @@
       <div class="terminal-line"><span class="cursor"></span></div>
     </div>
 
+    <div class="cancel-msg" *ngIf="cancelMessage">✓ {{ cancelMessage }}</div>
     <div class="error-msg" *ngIf="errorMsg">⚠ {{ errorMsg }}</div>
 
   </div>

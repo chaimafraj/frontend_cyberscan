@@ -38,13 +38,22 @@ describe('NotificationService', () => {
     expect(count).toBe(7);
   });
 
-  it('reads notifications from the backend notifications property', () => {
-    let length = 0;
-    service.getNotifications().subscribe((items) => (length = items.length));
+  it('reads and normalizes the backend notifications contract', () => {
+    let notification: any;
+    service.getNotifications().subscribe((items) => (notification = items[0]));
     http.expectOne(`${environment.API_BASE_URL}/notifications/`).flush({
       unread_count: 1,
-      notifications: [{ id: 3, titre: 'CVE critique', message: 'D?tect?e', niveau: 'alert', date: '', lu: false }],
+      notifications: [{
+        id: 3,
+        type: 'success',
+        title: 'Scan terminé',
+        description: 'Le rapport est prêt.',
+        timestamp: '2026-07-29T10:00:00Z',
+        read: false,
+      }],
     });
-    expect(length).toBe(1);
+    expect(notification.titre).toBe('Scan terminé');
+    expect(notification.niveau).toBe('success');
+    expect(notification.lu).toBe(false);
   });
 });

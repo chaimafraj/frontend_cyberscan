@@ -1,4 +1,4 @@
-﻿import { environment } from '../../environments/environment';
+import { environment } from '../../environments/environment';
 import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
@@ -79,7 +79,7 @@ export class NotificationService implements OnDestroy {
   }
 
   markAsRead(id: number): Observable<unknown> {
-    return this.http.patch(`${this.apiUrl}/notifications/${id}/read`, {}).pipe(
+    return this.http.patch(`${this.apiUrl}/notifications/${id}/read/`, {}).pipe(
       tap(() => {
         const current = this.notificationsSubject.value;
         const wasUnread = current.some(
@@ -96,7 +96,7 @@ export class NotificationService implements OnDestroy {
   }
 
   markAllAsRead(): Observable<unknown> {
-    return this.http.patch(`${this.apiUrl}/notifications/read-all`, {}).pipe(
+    return this.http.patch(`${this.apiUrl}/notifications/read-all/`, {}).pipe(
       tap(() => {
         this.notificationsSubject.next(
           this.notificationsSubject.value.map((notification) => ({ ...notification, lu: true })),
@@ -157,7 +157,7 @@ export class NotificationService implements OnDestroy {
       id: Number(item.id),
       titre: item.titre ?? item.title ?? '',
       message: item.message ?? item.body ?? '',
-      niveau: this.normalizeLevel(item.niveau ?? item.level ?? item.severity),
+      niveau: this.normalizeLevel(item.niveau ?? item.level ?? item.severity ?? item.type),
       date: item.date ?? item.created_at ?? item.date_creation ?? item.timestamp ?? '',
       lu: !!(item.lu ?? item.read ?? item.is_read),
     };

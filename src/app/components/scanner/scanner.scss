@@ -400,3 +400,32 @@
   font-size: 10px;
   letter-spacing: 1px;
 }
+.cancel-btn {
+  border-color: #ff4444;
+  color: #ff6666;
+}
+
+.cancel-msg {
+  color: #ffaa00;
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .scan-form { flex-wrap: wrap; }
+}
+
+.result-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 14px 18px;
+  border: 1px solid #00ff4144;
+  background: #0d1a0d;
+  font-size: 12px;
+}
+
+@media (max-width: 620px) {
+  .result-actions { align-items: stretch; flex-direction: column; }
+}

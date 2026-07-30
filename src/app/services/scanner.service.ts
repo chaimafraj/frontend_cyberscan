@@ -29,6 +29,13 @@ export class ScannerService {
     return this.http.get<any>(this.apiUrl + scanId + '/');
   }
 
+  cancelScan(scanId: number): Observable<{ scan_id: number; status: string; message: string }> {
+    return this.http.post<{ scan_id: number; status: string; message: string }>(
+      this.apiUrl + scanId + '/cancel/',
+      {},
+    );
+  }
+
   getRecentScans(): Observable<{ results: any[] }> {
     return this.http.get<{ results: any[] }>(this.apiUrl, {
       params: { page: '1', page_size: '10' },
