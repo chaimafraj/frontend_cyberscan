@@ -1026,8 +1026,10 @@ body[data-theme="light"] .page-info {
 
 /* Historique simple et compact */
 .historique-content {
-  max-width: 1380px;
-  padding: 26px 24px 42px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  padding: 26px 20px 42px;
 }
 
 .page-header {
@@ -1127,6 +1129,7 @@ body[data-theme="light"] .page-info {
 }
 
 .scans-table {
+  width: 100%;
   overflow-x: auto;
   border: 1px solid rgba(57, 255, 106, 0.15);
   border-radius: 7px;
@@ -1136,27 +1139,30 @@ body[data-theme="light"] .page-info {
 }
 
 .cyber-table {
-  min-width: 1080px;
+  width: 100%;
+  min-width: 1320px;
   background: transparent;
 }
 
 .cyber-table .mat-mdc-header-row {
-  height: 40px;
+  height: 48px;
   background: #101912;
 }
 
 .cyber-table .mat-mdc-header-cell {
-  padding: 0 10px;
+  padding: 0 14px;
   border-bottom: 1px solid rgba(57, 255, 106, 0.18);
   color: #89968c;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.8px;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
 .cyber-table .mat-mdc-row {
-  height: 48px;
+  height: 56px;
   background: transparent;
   transition: background 0.15s ease;
 }
@@ -1166,10 +1172,12 @@ body[data-theme="light"] .page-info {
 }
 
 .cyber-table .mat-mdc-cell {
-  padding: 0 10px;
+  padding: 0 14px;
   border-bottom: 1px solid rgba(57, 255, 106, 0.07);
   color: #aebbb1;
-  font-size: 11px;
+  font-size: 12px;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
@@ -1180,16 +1188,40 @@ body[data-theme="light"] .page-info {
 
 .badge,
 .status-badge {
-  padding: 3px 7px;
+  padding: 4px 8px;
   border-radius: 4px;
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 0.5px;
 }
 
 .actions,
 .export-actions {
+  align-items: center;
+  display: inline-flex;
   gap: 3px;
+  flex-wrap: nowrap;
+  justify-content: center;
   white-space: nowrap;
+}
+
+.cyber-table .mat-mdc-header-cell,
+.cyber-table .mat-mdc-cell {
+  text-align: center !important;
+  vertical-align: middle;
+  white-space: nowrap !important;
+}
+
+.cyber-table .mat-mdc-row {
+  white-space: nowrap;
+}
+
+.cyber-table .actions-cell {
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+.cyber-table .mat-column-actions {
+  min-width: 150px;
 }
 
 .action-btn {
@@ -1207,11 +1239,24 @@ body[data-theme="light"] .page-info {
 }
 
 .status-with-icon {
+  flex-wrap: nowrap;
   gap: 5px;
+  justify-content: center;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 .status-icon {
+  flex: 0 0 auto;
   font-size: 12px;
+}
+
+.cyber-table .mat-column-rapport {
+  min-width: 175px;
+}
+
+.cyber-table .mat-column-email {
+  min-width: 145px;
 }
 
 .cyber-paginator {

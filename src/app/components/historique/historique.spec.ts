@@ -65,6 +65,8 @@ describe('Historique', () => {
 
     expect(component.displayedColumns).toContain('risk');
     expect(component.displayedColumns).toContain('statut');
+    expect(component.displayedColumns).toContain('actions');
+    expect(component.displayedColumns).not.toContain('exports');
     expect(component.scans.map((scan) => scan.statut)).toEqual(['FAIBLE', 'MOYEN', 'ÉLEVÉ']);
     expect(component.getScanStatusLabel(component.scans[0].status)).toBe('TERMINÉ');
     expect(component.getScanStatusLabel(component.scans[1].status)).toBe('EN COURS');

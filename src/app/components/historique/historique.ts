@@ -65,8 +65,8 @@ class Historique implements OnInit, OnDestroy {
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'admin';
     this.displayedColumns = this.isAdmin
-      ? ['client', 'domaine', 'date', 'protocols', 'score', 'risk', 'statut', 'rapport', 'email', 'exports', 'actions']
-      : ['domaine', 'date', 'protocols', 'score', 'risk', 'statut', 'rapport', 'email', 'exports', 'actions'];
+      ? ['client', 'domaine', 'date', 'protocols', 'score', 'risk', 'statut', 'rapport', 'email', 'actions']
+      : ['domaine', 'date', 'protocols', 'score', 'risk', 'statut', 'rapport', 'email', 'actions'];
     this.chatbotContext.clearScanContext();
     this.startMatrix();
     this.loadScans();
