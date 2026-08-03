@@ -39,7 +39,7 @@
       />
       <select class="cyber-select" [(ngModel)]="filterRisk" (change)="onFilterChange()">
         <option value="">TOUS LES RISQUES</option>
-        <option value="high">CRITIQUE</option>
+        <option value="high">ÉLEVÉ</option>
         <option value="medium">MOYEN</option>
         <option value="low">FAIBLE</option>
       </select>
@@ -80,10 +80,19 @@
           </td>
         </ng-container>
 
-        <ng-container matColumnDef="statut">
+        <ng-container matColumnDef="risk">
           <th mat-header-cell *matHeaderCellDef>NIVEAU DE RISQUE</th>
           <td mat-cell *matCellDef="let scan">
             <span class="badge" [ngClass]="scan.riskClass">{{ scan.statut }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="statut">
+          <th mat-header-cell *matHeaderCellDef>STATUT</th>
+          <td mat-cell *matCellDef="let scan">
+            <span class="badge" [ngClass]="getScanStatusClass(scan.status)">
+              {{ getScanStatusLabel(scan.status) }}
+            </span>
           </td>
         </ng-container>
 

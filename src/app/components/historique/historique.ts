@@ -65,8 +65,8 @@ class Historique implements OnInit, OnDestroy {
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'admin';
     this.displayedColumns = this.isAdmin
-      ? ['client', 'domaine', 'date', 'protocols', 'score', 'statut', 'rapport', 'email', 'exports', 'actions']
-      : ['domaine', 'date', 'protocols', 'score', 'statut', 'rapport', 'email', 'exports', 'actions'];
+      ? ['client', 'domaine', 'date', 'protocols', 'score', 'risk', 'statut', 'rapport', 'email', 'exports', 'actions']
+      : ['domaine', 'date', 'protocols', 'score', 'risk', 'statut', 'rapport', 'email', 'exports', 'actions'];
     this.chatbotContext.clearScanContext();
     this.startMatrix();
     this.loadScans();
@@ -125,7 +125,7 @@ class Historique implements OnInit, OnDestroy {
     return {
       ...s,
       riskClass: s.score_risque_ia >= 7 ? 'danger' : s.score_risque_ia >= 4 ? 'warn' : 'ok',
-      statut: s.score_risque_ia >= 7 ? 'CRITIQUE' : s.score_risque_ia >= 4 ? 'MOYEN' : 'FAIBLE',
+      statut: s.score_risque_ia >= 7 ? 'ÉLEVÉ' : s.score_risque_ia >= 4 ? 'MOYEN' : 'FAIBLE',
       // Statuts rapport : non_genere | generation | pret | erreur
       rapportStatus:
         s.rapport_status ?? s.rapportStatus ?? (pdfReady ? 'pret' : 'non_genere'),
@@ -135,6 +135,35 @@ class Historique implements OnInit, OnDestroy {
       pdfDownloading: false,
       emailSending: false,
     };
+  }
+
+  getScanStatusLabel(status: unknown): string {
+    switch (String(status ?? '').toUpperCase()) {
+      case 'COMPLETED':
+        return 'TERMINÉ';
+      case 'RUNNING':
+        return 'EN COURS';
+      case 'PENDING':
+        return 'EN ATTENTE';
+      case 'FAILED':
+        return 'ÉCHEC';
+      case 'CANCELLED':
+        return 'ANNULÉ';
+      default:
+        return 'INCONNU';
+    }
+  }
+
+  getScanStatusClass(status: unknown): string {
+    switch (String(status ?? '').toUpperCase()) {
+      case 'COMPLETED':
+        return 'ok';
+      case 'RUNNING':
+      case 'PENDING':
+        return 'warn';
+      default:
+        return 'danger';
+    }
   }
 
   getRapportStatusLabel(status: string): string {

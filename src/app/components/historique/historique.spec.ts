@@ -48,6 +48,29 @@ describe('Historique', () => {
     req.flush({ results: [], total: 0, total_pages: 1, page: 1 });
   });
 
+  it('separates the risk level from the scan status', () => {
+    component.loadScans();
+
+    const req = httpMock.expectOne((request) => request.url === 'http://127.0.0.1:8000/api/scans/');
+    req.flush({
+      results: [
+        { id: 1, score_risque_ia: 2, status: 'COMPLETED' },
+        { id: 2, score_risque_ia: 5, status: 'RUNNING' },
+        { id: 3, score_risque_ia: 8, status: 'FAILED' },
+      ],
+      total: 3,
+      total_pages: 1,
+      page: 1,
+    });
+
+    expect(component.displayedColumns).toContain('risk');
+    expect(component.displayedColumns).toContain('statut');
+    expect(component.scans.map((scan) => scan.statut)).toEqual(['FAIBLE', 'MOYEN', 'ÉLEVÉ']);
+    expect(component.getScanStatusLabel(component.scans[0].status)).toBe('TERMINÉ');
+    expect(component.getScanStatusLabel(component.scans[1].status)).toBe('EN COURS');
+    expect(component.getScanStatusLabel(component.scans[2].status)).toBe('ÉCHEC');
+  });
+
   it('builds the professional detail view from the real scan response', () => {
     component.viewScan({
       id: 176,
