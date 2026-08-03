@@ -31,6 +31,11 @@ class Historique implements OnInit, OnDestroy {
   editMode = false;
   editDomaine = '';
   loading = true;
+  detailLoading = false;
+  detailError = '';
+  qrCodeUrl: string | null = null;
+  qrLoading = false;
+  relaunching = false;
 
   vulnsManuelles: any[] = [];
   showVulnForm = false;
@@ -65,11 +70,24 @@ class Historique implements OnInit, OnDestroy {
     this.chatbotContext.clearScanContext();
     this.startMatrix();
     this.loadScans();
+
+    const linkedScanId = Number(new URLSearchParams(window.location.search).get('scan'));
+    if (Number.isInteger(linkedScanId) && linkedScanId > 0) {
+      this.viewScan({
+        id: linkedScanId,
+        domaine: '',
+        date_scan: null,
+        score_risque_ia: 0,
+        status: 'PENDING',
+        resultats_ssl: {},
+      });
+    }
   }
 
   ngOnDestroy() {
     if (this.matrixInterval) clearInterval(this.matrixInterval);
     if (this.actionMessageTimer) clearTimeout(this.actionMessageTimer);
+    this.revokeQrCodeUrl();
     this.chatbotContext.clearScanContext();
   }
 
@@ -122,29 +140,28 @@ class Historique implements OnInit, OnDestroy {
   getRapportStatusLabel(status: string): string {
     switch (status) {
       case 'generation':
-        return 'GÉNÉRATION...';
+        return 'En cours';
       case 'pret':
-        return 'PRÊT';
+        return 'Rapport disponible';
       case 'erreur':
-        return 'ERREUR';
+        return 'Rapport indisponible';
       default:
-        return 'NON GÉNÉRÉ';
+        return 'Rapport indisponible';
     }
   }
 
   getEmailStatusLabel(status: string): string {
     switch (status) {
       case 'envoi':
-        return 'ENVOI...';
+        return 'En attente';
       case 'envoye':
-        return 'ENVOYÉ';
+        return 'E-mail envoy\u00e9';
       case 'erreur':
-        return 'ERREUR';
+        return '\u00c9chec';
       default:
-        return 'NON ENVOYÉ';
+        return 'En attente';
     }
   }
-
   showActionMessage(type: 'success' | 'error', text: string) {
     if (this.actionMessageTimer) clearTimeout(this.actionMessageTimer);
     this.actionMessage = { type, text };
@@ -362,24 +379,50 @@ class Historique implements OnInit, OnDestroy {
   }
 
   viewScan(scan: any) {
-    this.selectedScan = scan;
-    if (scan.score_risque_ia >= 7) {
-      this.selectedScan.riskClass = 'risk-high';
-    } else if (scan.score_risque_ia >= 4) {
-      this.selectedScan.riskClass = 'risk-medium';
-    } else {
-      this.selectedScan.riskClass = 'risk-low';
-    }
-    this.chatbotContext.setScanContext(scan);
+    this.revokeQrCodeUrl();
+    this.detailError = '';
+    this.detailLoading = true;
+    this.vulnsManuelles = [];
+    this.selectedScan = this.buildDetailViewModel(this.mapScanUi({ ...scan }));
+    this.chatbotContext.setScanContext(this.selectedScan);
     this.loadVulnsManuelles(scan.id);
+
+    this.scannerService.getScan(scan.id).subscribe({
+      next: (detail) => {
+        const uiState = {
+          pdfGenerating: this.selectedScan?.pdfGenerating ?? false,
+          pdfDownloading: this.selectedScan?.pdfDownloading ?? false,
+          emailSending: this.selectedScan?.emailSending ?? false,
+        };
+        this.selectedScan = this.buildDetailViewModel(this.mapScanUi({
+          ...scan,
+          ...detail,
+          ...uiState,
+          rapport_status: detail.report_status ?? scan.rapportStatus,
+          email_status: detail.email_status ?? scan.emailStatus,
+        }));
+        this.chatbotContext.setScanContext(this.selectedScan);
+        this.detailLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.detailError = this.extractErrorMessage(
+          err,
+          'Impossible de charger le d\u00e9tail complet du scan.',
+        );
+        this.detailLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   closeModal() {
+    this.revokeQrCodeUrl();
     this.selectedScan = null;
     this.selectedProtocol = null;
+    this.detailError = '';
     this.chatbotContext.clearScanContext();
   }
-
   deleteScan(scan: any, event: Event) {
     event.stopPropagation();
     this.http.delete(`${this.apiUrl}/scans/${scan.id}/`).subscribe({
@@ -394,12 +437,23 @@ class Historique implements OnInit, OnDestroy {
   }
 
   loadVulnsManuelles(scanId: number) {
-    this.http.get<any[]>(`${this.apiUrl}/scans/${scanId}/vulnerabilites/`).subscribe({
-      next: (data) => (this.vulnsManuelles = data),
-      error: () => (this.vulnsManuelles = []),
+    this.http.get<any[]>(this.apiUrl + '/scans/' + scanId + '/vulnerabilites/').subscribe({
+      next: (data) => {
+        this.vulnsManuelles = data;
+        if (this.selectedScan?.id === scanId) {
+          this.selectedScan = this.buildDetailViewModel(this.selectedScan);
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => {
+        this.vulnsManuelles = [];
+        if (this.selectedScan?.id === scanId) {
+          this.selectedScan = this.buildDetailViewModel(this.selectedScan);
+          this.cdr.detectChanges();
+        }
+      },
     });
   }
-
   openVulnForm() {
     this.showVulnForm = true;
   }
@@ -420,6 +474,401 @@ class Historique implements OnInit, OnDestroy {
     });
   }
 
+  private buildDetailViewModel(scan: any): any {
+    const results = scan?.resultats_ssl ?? {};
+    const findings = this.collectFindings(scan);
+    const score = Number(scan?.score_risque_ia ?? 0);
+    const securityScore = Math.max(0, 10 - score);
+    const protocols = this.buildProtocolView(results.protocols ?? []);
+    const technologies = results.whatweb?.technologies ?? scan?.whatweb?.technologies ?? [];
+    const tools = this.buildToolResults(results);
+    const timeline = this.buildTimeline(scan, results);
+    const certificate = results.certificate ?? null;
+    const certificateStatus = !certificate
+      ? 'Non d\u00e9termin\u00e9'
+      : certificate.expired === true
+        ? 'expir\u00e9'
+        : certificate.expired === false
+          ? 'valide'
+          : 'pr\u00e9sent';
+    const riskLabel = this.riskLabel(score);
+    const severityCounts = {
+      critical: findings.filter((item: any) => item.severityKey === 'critical').length,
+      high: findings.filter((item: any) => item.severityKey === 'high').length,
+      medium: findings.filter((item: any) => item.severityKey === 'medium').length,
+      low: findings.filter((item: any) => item.severityKey === 'low').length,
+    };
+    const ports = Array.isArray(results.ports) ? results.ports : [];
+    const serviceCount = new Set(ports.map((port: any) => port?.service).filter(Boolean)).size;
+    const toolCount = tools.filter((tool: any) => tool.statusKey === 'completed').length;
+    const cveCount = findings.filter((item: any) => !!item.cve).length;
+    const totalVulnerabilities = findings.length;
+    const kpis = [
+      { icon: '\u26a0', value: totalVulnerabilities, label: 'Vuln\u00e9rabilit\u00e9s', tone: 'neutral' },
+      { icon: '\u25c6', value: severityCounts.critical, label: 'Critiques', tone: 'critical' },
+      { icon: '\u25b2', value: severityCounts.high, label: '\u00c9lev\u00e9es', tone: 'high' },
+      { icon: '\u25cf', value: severityCounts.medium, label: 'Moyennes', tone: 'medium' },
+      { icon: '\u25bc', value: severityCounts.low, label: 'Faibles', tone: 'low' },
+      { icon: 'CVE', value: cveCount, label: 'CVE d\u00e9tect\u00e9es', tone: 'cyan' },
+      { icon: 'P', value: ports.length, label: 'Ports ouverts', tone: 'cyan' },
+      { icon: 'S', value: serviceCount, label: 'Services d\u00e9tect\u00e9s', tone: 'cyan' },
+      { icon: 'T', value: technologies.length, label: 'Technologies', tone: 'cyan' },
+      { icon: 'O', value: toolCount, label: 'Outils ex\u00e9cut\u00e9s', tone: 'green' },
+    ];
+    const primaryFinding = [...findings].sort(
+      (left: any, right: any) => (right.score ?? -1) - (left.score ?? -1),
+    )[0] ?? null;
+    const durationSeconds = Number(scan?.duration_seconds ?? results.scan_duration_seconds ?? 0);
+    const domain = scan?.domaine ?? 'non renseigne';
+    const pluralVerb = totalVulnerabilities > 1 ? 's ont' : ' a';
+    const pluralSuffix = totalVulnerabilities > 1 ? 's' : '';
+
+    return {
+      ...scan,
+      resultats_ssl: results,
+      riskLabel,
+      statut: riskLabel.toUpperCase(),
+      riskClass: this.riskClass(score),
+      securityScore: securityScore.toFixed(1),
+      durationLabel: this.formatDuration(durationSeconds),
+      certificateStatus,
+      reportStatusLabel: this.getRapportStatusLabel(scan?.rapportStatus),
+      emailStatusLabel: this.getEmailStatusLabel(scan?.emailStatus),
+      protocolsUi: protocols,
+      technologiesUi: technologies,
+      toolsUi: tools,
+      timelineUi: timeline,
+      allFindings: findings,
+      primaryFinding,
+      kpis,
+      httpsPort: ports.find((port: any) => Number(port?.port) === 443) ?? null,
+      executiveSummary:
+        "L'audit de s\u00e9curit\u00e9 du domaine " + domain +
+        ' a \u00e9t\u00e9 r\u00e9alis\u00e9 le ' + this.formatDateTime(scan?.date_scan) + '. ' +
+        "L'analyse attribue un niveau de risque " + riskLabel +
+        ' avec un score IA de ' + score.toFixed(1) + '/10 et un score de s\u00e9curit\u00e9 de ' +
+        securityScore.toFixed(1) + '/10. ' + totalVulnerabilities + ' vuln\u00e9rabilit\u00e9' +
+        pluralVerb + ' \u00e9t\u00e9 d\u00e9tect\u00e9e' + pluralSuffix + '. Le certificat SSL est ' +
+        certificateStatus + '. Les principales recommandations sont disponibles dans le rapport.',
+    };
+  }
+
+  private collectFindings(scan: any): any[] {
+    const results = scan?.resultats_ssl ?? {};
+    const findings: any[] = [];
+    const seen = new Set<string>();
+    const add = (item: any) => {
+      const key = String(item.cve ?? item.name ?? item.description ?? findings.length).toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      const score = item.score == null ? null : Number(item.score);
+      findings.push({
+        ...item,
+        score: Number.isFinite(score) ? score : null,
+        severityKey: this.severityKey(item.severity, score),
+      });
+    };
+
+    for (const cve of scan?.cves ?? []) {
+      add({
+        name: cve.produit_concerne || cve.cve_id,
+        cve: cve.cve_id,
+        score: cve.cvss_score,
+        severity: null,
+        description: cve.description,
+        impact: cve.description,
+        solution: cve.recommandation_ia,
+        priority: this.priorityLabel(cve.cvss_score),
+      });
+    }
+    for (const cve of results.nvd_cves ?? []) {
+      add({
+        name: cve.produit_concerne || cve.cve_id || cve.id,
+        cve: cve.cve_id || cve.id,
+        score: cve.cvss_score ?? cve.cvssScore ?? cve.score,
+        severity: cve.severity ?? cve.baseSeverity,
+        description: cve.description,
+        impact: cve.description,
+        solution: cve.recommendation ?? cve.recommandation,
+        priority: this.priorityLabel(cve.cvss_score ?? cve.score),
+      });
+    }
+    for (const finding of results.zap_findings ?? []) {
+      const mappedScore = finding.cvss_score ?? this.scoreFromSeverity(finding.risk);
+      add({
+        name: finding.name || 'Alerte OWASP ZAP',
+        cve: finding.cve_id ?? null,
+        score: mappedScore,
+        severity: finding.risk,
+        description: finding.description,
+        impact: finding.other_info || finding.impact,
+        solution: finding.solution,
+        priority: this.priorityLabel(mappedScore),
+      });
+    }
+    for (const finding of results.nuclei_findings ?? []) {
+      const mappedScore = finding.cvss_score ?? this.scoreFromSeverity(finding.severity);
+      add({
+        name: finding.name || finding.template_id || 'Constat Nuclei',
+        cve: String(finding.template_id ?? '').startsWith('CVE-') ? finding.template_id : null,
+        score: mappedScore,
+        severity: finding.severity,
+        description: finding.description || finding.matched_at,
+        impact: finding.description,
+        solution: finding.remediation,
+        priority: this.priorityLabel(mappedScore),
+      });
+    }
+    for (const vulnerability of results.vulnerabilities ?? []) {
+      add({
+        name: String(vulnerability),
+        cve: null,
+        score: null,
+        severity: null,
+        description: 'Constat technique d\u00e9tect\u00e9 par les outils du scan.',
+        impact: 'Impact \u00e0 confirmer selon le contexte de l\u2019actif.',
+        solution: 'Consulter la fiche technique et le rapport pour la rem\u00e9diation.',
+        priority: '\u00c0 qualifier',
+      });
+    }
+    for (const manual of this.vulnsManuelles ?? []) {
+      add({
+        name: manual.nom,
+        cve: null,
+        score: manual.cvss_score,
+        severity: manual.risk,
+        description: manual.description,
+        impact: manual.technical_business_risks,
+        solution: manual.recommandation,
+        priority: manual.priorite || this.priorityLabel(manual.cvss_score),
+        manual: true,
+        id: manual.id,
+      });
+    }
+    return findings;
+  }
+
+  private buildToolResults(results: any): any[] {
+    const executions = results.tool_executions ?? {};
+    const ports = Array.isArray(results.ports) ? results.ports : [];
+    const technologies = results.whatweb?.technologies ?? [];
+    const definitions = [
+      { key: 'sslscan', label: 'SSLScan', present: !!results.sslscan, count: (results.protocols?.length ?? 0) + (results.cipher_suites?.length ?? 0), error: results.sslscan_error },
+      { key: 'nmap', label: 'Nmap', present: !!results.nmap, count: ports.length, error: results.nmap_error },
+      { key: 'openssl', label: 'OpenSSL', present: !!results.openssl, count: results.certificate ? 1 : 0, error: results.openssl_error },
+      { key: 'whatweb', label: 'WhatWeb', present: results.whatweb?.success === true || technologies.length > 0, count: technologies.length, error: results.whatweb?.error },
+      { key: 'ssllabs', label: 'SSL Labs', present: results.ssllabs?.success === true || !!results.ssllabs?.grade, count: results.ssllabs?.grade && results.ssllabs.grade !== 'N/A' ? 1 : 0, error: results.ssllabs?.error },
+      { key: 'nvd', label: 'NVD', present: results.nvd?.requested === true || (results.nvd_cves?.length ?? 0) > 0, count: results.nvd_cves?.length ?? results.nvd?.cves_count ?? 0, error: results.nvd?.success === false ? (results.nvd?.errors ?? []).join(', ') : null },
+      { key: 'zap', label: 'OWASP ZAP', present: results.zap_success === true || !!results.zap_raw || (results.zap_findings?.length ?? 0) > 0, count: results.zap_findings?.length ?? 0, error: results.zap_error },
+    ];
+    return definitions.map((tool) => {
+      const execution = executions[tool.key] ?? {};
+      const wasMeasured = Object.keys(execution).length > 0;
+      const statusKey = tool.error || execution.success === false
+        ? 'failed'
+        : tool.present || wasMeasured
+          ? 'completed'
+          : 'not-run';
+      return {
+        ...tool,
+        statusKey,
+        statusLabel: statusKey === 'completed' ? 'Termin\u00e9' : statusKey === 'failed' ? '\u00c9chec' : 'Non ex\u00e9cut\u00e9',
+        completedAt: execution.completed_at ?? null,
+        durationLabel: this.formatDuration(execution.duration_seconds),
+      };
+    });
+  }
+
+  private buildProtocolView(protocols: any[]): any[] {
+    return (protocols ?? []).map((protocol: any) => {
+      const name = String(protocol?.name ?? protocol);
+      const rawStatus = String(protocol?.status ?? '').toLowerCase();
+      const legacy = name === 'TLSv1.0' || name === 'TLSv1.1';
+      const disabled = ['disabled', 'rejected', 'not supported'].includes(rawStatus);
+      let statusKey = 'acceptable';
+      let statusLabel = 'Acceptable';
+      if (legacy && !disabled) {
+        statusKey = 'obsolete';
+        statusLabel = 'Obsol\u00e8te';
+      } else if (name === 'TLSv1.3' && !disabled) {
+        statusKey = 'recommended';
+        statusLabel = 'Recommand\u00e9';
+      } else if (disabled && legacy) {
+        statusKey = 'recommended';
+        statusLabel = 'Recommand\u00e9';
+      }
+      return { ...protocol, name, statusKey, statusLabel };
+    });
+  }
+
+  private buildTimeline(scan: any, results: any): any[] {
+    const items = [...(scan?.timeline ?? [])].map((item: any) => ({
+      label: item.label,
+      timestamp: item.timestamp,
+      type: item.type,
+    }));
+    const executions = results.tool_executions ?? {};
+    for (const [key, execution] of Object.entries<any>(executions)) {
+      if (execution?.completed_at) {
+        items.push({
+          label: key + ' termin\u00e9',
+          timestamp: execution.completed_at,
+          type: 'tool.' + key,
+        });
+      }
+    }
+    if (!items.length && scan?.started_at) {
+      items.push({ label: 'Scan lanc\u00e9', timestamp: scan.started_at, type: 'scan.running' });
+    }
+    if (scan?.completed_at && !items.some((item: any) => item.type === 'scan.completed')) {
+      items.push({ label: 'Scan termin\u00e9', timestamp: scan.completed_at, type: 'scan.completed' });
+    }
+    return items.sort(
+      (left: any, right: any) =>
+        new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime(),
+    );
+  }
+
+  private riskLabel(score: number): string {
+    if (score >= 9) return 'Critique';
+    if (score >= 7) return '\u00c9lev\u00e9';
+    if (score >= 4) return 'Moyen';
+    return 'Faible';
+  }
+
+  private riskClass(score: number): string {
+    if (score >= 9) return 'risk-critical';
+    if (score >= 7) return 'risk-high';
+    if (score >= 4) return 'risk-medium';
+    return 'risk-low';
+  }
+
+  private severityKey(severity: any, score: number | null): string {
+    const value = String(severity ?? '').toLowerCase();
+    if (value.includes('critical') || value.includes('critique') || (score != null && score >= 9)) return 'critical';
+    if (value.includes('high') || value.includes('\u00e9lev') || (score != null && score >= 7)) return 'high';
+    if (value.includes('medium') || value.includes('moyen') || (score != null && score >= 4)) return 'medium';
+    if (value.includes('low') || value.includes('faible') || score != null) return 'low';
+    return 'unknown';
+  }
+
+  private scoreFromSeverity(severity: any): number | null {
+    const value = String(severity ?? '').toLowerCase();
+    if (value.includes('critical') || value.includes('critique')) return 9.5;
+    if (value.includes('high') || value.includes('\u00e9lev')) return 7.5;
+    if (value.includes('medium') || value.includes('moyen')) return 5;
+    if (value.includes('low') || value.includes('faible')) return 2;
+    return null;
+  }
+
+  private priorityLabel(score: any): string {
+    const value = Number(score);
+    if (!Number.isFinite(value)) return '\u00c0 qualifier';
+    if (value >= 9) return 'P1 - Imm\u00e9diate';
+    if (value >= 7) return 'P1 - Prioritaire';
+    if (value >= 4) return 'P2 - Planifi\u00e9e';
+    return 'P3 - Surveillance';
+  }
+
+  private formatDuration(seconds: any): string {
+    const value = Number(seconds);
+    if (!Number.isFinite(value) || value <= 0) return 'Non mesur\u00e9e';
+    const rounded = Math.round(value);
+    const minutes = Math.floor(rounded / 60);
+    const remaining = rounded % 60;
+    return minutes
+      ? minutes + ' min ' + String(remaining).padStart(2, '0') + ' s'
+      : remaining + ' s';
+  }
+
+  private formatDateTime(value: any): string {
+    if (!value) return 'date non renseign\u00e9e';
+    return new Intl.DateTimeFormat('fr-FR', {
+      dateStyle: 'short',
+      timeStyle: 'medium',
+    }).format(new Date(value));
+  }
+
+  consulterRapport(scan: any, event?: Event) {
+    event?.stopPropagation();
+    this.scannerService.downloadRapportPdf(scan.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      },
+      error: (err) => this.toastService.error(
+        this.extractErrorMessage(err, 'Impossible d\u2019ouvrir le rapport.'),
+      ),
+    });
+  }
+
+  imprimerRapport(scan: any, event?: Event) {
+    event?.stopPropagation();
+    this.scannerService.downloadRapportPdf(scan.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const printWindow = window.open(url, '_blank');
+        if (printWindow) {
+          printWindow.addEventListener('load', () => printWindow.print(), { once: true });
+        }
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      },
+      error: () => this.toastService.error('Impossible d\u2019imprimer le rapport.'),
+    });
+  }
+
+  genererQrCode(scan: any, event?: Event) {
+    event?.stopPropagation();
+    if (this.qrLoading) return;
+    this.qrLoading = true;
+    this.revokeQrCodeUrl();
+    this.scannerService.getReportQr(scan.id).subscribe({
+      next: (blob) => {
+        this.qrCodeUrl = URL.createObjectURL(blob);
+        this.qrLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.qrLoading = false;
+        this.toastService.error('Impossible de g\u00e9n\u00e9rer le QR Code.');
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  relancerScan(scan: any, event?: Event) {
+    event?.stopPropagation();
+    if (this.relaunching) return;
+    this.relaunching = true;
+    this.scannerService.demarrerScan(scan.domaine, {}).subscribe({
+      next: () => {
+        this.relaunching = false;
+        this.toastService.success('Nouveau scan de ' + scan.domaine + ' mis en file.');
+        this.closeModal();
+        this.loadScans(1);
+      },
+      error: (err) => {
+        this.relaunching = false;
+        this.toastService.error(this.extractErrorMessage(err, 'Impossible de relancer le scan.'));
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  voirToutesLesVulnerabilites() {
+    document.getElementById('all-vulnerabilities')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
+
+  private revokeQrCodeUrl() {
+    if (this.qrCodeUrl) {
+      URL.revokeObjectURL(this.qrCodeUrl);
+      this.qrCodeUrl = null;
+    }
+  }
   showProtocolDetail(protocol: any) {
     const info: any = {
       'TLSv1.0': {
@@ -483,7 +932,8 @@ class Historique implements OnInit, OnDestroy {
     setTimeout(() => {
       const canvas = document.getElementById('hist-matrix') as HTMLCanvasElement;
       if (!canvas) return;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       const cols = Math.floor(canvas.width / 14);

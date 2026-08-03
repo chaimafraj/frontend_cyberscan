@@ -33,4 +33,15 @@ describe('ScannerService', () => {
     request.flush({ scan_id: 42, status: 'CANCELLED', message: 'Scan annulé.' });
     expect(status).toBe('CANCELLED');
   });
+
+  it('downloads the report QR code as an SVG blob', () => {
+    service.getReportQr(176).subscribe();
+
+    const request = http.expectOne(
+      'http://127.0.0.1:8000/api/scans/176/rapport/qr/',
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.responseType).toBe('blob');
+    request.flush(new Blob(['<svg></svg>'], { type: 'image/svg+xml' }));
+  });
 });

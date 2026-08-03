@@ -198,265 +198,344 @@
 
   </div>
 
-  <!-- MODAL DETAIL -->
+  <!-- MODAL DETAIL PROFESSIONNEL -->
   @if (selectedScan) {
-    <div class="modal-overlay" (click)="closeModal()">
-      <div class="modal-box" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <span>[ DÉTAIL DU SCAN ]</span>
-          <button class="close-btn" (click)="closeModal()">✕</button>
-        </div>
-        <div class="modal-body">
-          @let technologies = selectedScan.whatweb?.technologies ?? selectedScan.resultats_ssl?.whatweb?.technologies;
-          <div class="detail-row">
-            <span class="label">ID DU SCAN:</span>
-            <span class="value">{{ selectedScan.id }}</span>
+    <div class="modal-overlay scan-detail-overlay" (click)="closeModal()">
+      <article class="modal-box scan-detail-modal" (click)="$event.stopPropagation()" aria-labelledby="scan-detail-title">
+        <header class="modal-header scan-detail-header">
+          <div class="detail-title-group">
+            <span class="detail-kicker">CYBERSCAN / ASSET ASSESSMENT</span>
+            <div class="detail-title-line">
+              <h2 id="scan-detail-title">D&eacute;tail du scan</h2>
+              <span class="detail-id">#{{ selectedScan.id }}</span>
+              <span class="risk-pill" [ngClass]="selectedScan.riskClass">{{ selectedScan.riskLabel }}</span>
+            </div>
+            <p>{{ selectedScan.domaine }} &middot; {{ selectedScan.date_scan | date:'dd/MM/yyyy HH:mm:ss' }}</p>
           </div>
-          @if (selectedScan.client_nom) {
-            <div class="detail-row">
-              <span class="label">CLIENT:</span>
-              <span class="value">{{ selectedScan.client_nom }}</span>
+          <button type="button" class="close-btn detail-close" (click)="closeModal()" aria-label="Fermer">&times;</button>
+        </header>
+
+        <div class="modal-body scan-detail-body">
+          @if (detailLoading) {
+            <div class="detail-loading" role="status">
+              <span class="inline-loader"></span>
+              Chargement des donn&eacute;es r&eacute;elles du scan...
             </div>
           }
-          <div class="detail-row">
-            <span class="label">DOMAINE:</span>
-            <span class="value">{{ selectedScan.domaine }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">DATE:</span>
-            <span class="value">{{ selectedScan.date_scan | date:'dd/MM/yyyy HH:mm:ss' }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">SCORE:</span>
-            <span class="value" [ngClass]="selectedScan.riskClass">{{ selectedScan.score_risque_ia }}/10</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">NIVEAU DE RISQUE:</span>
-            <span class="value" [ngClass]="selectedScan.riskClass">{{ selectedScan.statut }}</span>
-          </div>
+          @if (detailError) {
+            <div class="detail-error" role="alert">{{ detailError }}</div>
+          }
 
-          <div class="scan-section rapport-section">
-            <span class="label">RAPPORT:</span>
-            <div class="rapport-status-row">
-              <span class="status-with-icon">
-                <span class="status-icon pdf-icon" aria-hidden="true">📄</span>
-                <span class="label">Statut du rapport:</span>
-                @if (selectedScan.pdfGenerating || selectedScan.pdfDownloading) {
-                  <span class="inline-loader" aria-label="Chargement"></span>
-                }
-                <span
-                  class="badge status-badge"
-                  [class.idle]="selectedScan.rapportStatus === 'non_genere'"
-                  [class.pending]="selectedScan.rapportStatus === 'generation'"
-                  [class.ok]="selectedScan.rapportStatus === 'pret'"
-                  [class.danger]="selectedScan.rapportStatus === 'erreur'"
-                >
-                  {{ getRapportStatusLabel(selectedScan.rapportStatus) }}
-                </span>
-              </span>
-              <span class="status-with-icon">
-                <span class="status-icon email-icon" aria-hidden="true">✉</span>
-                <span class="label">Statut de l'email:</span>
-                @if (selectedScan.emailSending) {
-                  <span class="inline-loader" aria-label="Chargement"></span>
-                }
-                <span
-                  class="badge status-badge"
-                  [class.idle]="selectedScan.emailStatus === 'non_envoye'"
-                  [class.pending]="selectedScan.emailStatus === 'envoi'"
-                  [class.ok]="selectedScan.emailStatus === 'envoye'"
-                  [class.danger]="selectedScan.emailStatus === 'erreur'"
-                >
-                  {{ getEmailStatusLabel(selectedScan.emailStatus) }}
-                </span>
-              </span>
-            </div>
-
-            <div class="rapport-actions">
-              <button
-                type="button"
-                class="modal-btn pdf-download-btn"
-                (click)="telechargerRapportPdf(selectedScan, $event)"
-                [disabled]="selectedScan.pdfGenerating || selectedScan.pdfDownloading"
-              >
-                @if (selectedScan.pdfGenerating) {
-                  <span class="btn-spinner" aria-hidden="true"></span>
-                  Génération du PDF...
-                } @else if (selectedScan.pdfDownloading) {
-                  <span class="btn-spinner" aria-hidden="true"></span>
-                  Téléchargement...
-                } @else {
-                  📄 Télécharger le Rapport PDF
-                }
-              </button>
-              <button
-                type="button"
-                class="modal-btn email-send-btn"
-                (click)="envoyerRapportEmail(selectedScan, $event)"
-                [disabled]="selectedScan.emailSending"
-              >
-                @if (selectedScan.emailSending) {
-                  <span class="btn-spinner" aria-hidden="true"></span>
-                  Envoi Email...
-                } @else {
-                  ✉ Envoyer le Rapport par Email
-                }
-              </button>
-            </div>
-
-            <div class="export-section">
-              <span class="label">TÉLÉCHARGER:</span>
-              <div class="export-actions-row">
-                <button type="button" class="modal-btn export-dl-btn" (click)="exportPdf(selectedScan, $event)">📄 PDF</button>
-                <button type="button" class="modal-btn export-dl-btn" (click)="exportExcel(selectedScan, $event)">📊 Excel</button>
-                <button type="button" class="modal-btn export-dl-btn" (click)="exportJson(selectedScan, $event)">📦 JSON</button>
+          <section class="detail-card executive-card">
+            <div class="section-heading">
+              <span class="section-icon">&#9678;</span>
+              <div>
+                <span class="section-eyebrow">ANALYSE CONSOLID&Eacute;E</span>
+                <h3>R&eacute;sum&eacute; ex&eacute;cutif</h3>
               </div>
             </div>
-          </div>
-
-          <div class="detail-row">
-            <span class="label">PROTOCOLES:</span>
-          </div>
-          <div class="proto-list">
-            @for (p of selectedScan.resultats_ssl?.protocols; track p.name) {
-              <div class="proto-item" (click)="showProtocolDetail(p); $event.stopPropagation()" style="cursor:pointer">
-                <span>{{ p.name }}</span>
-                @if (p.status === 'secure') {
-                  <span class="badge-ok">SECURE</span>
-                }
-                @if (p.status === 'obsolete') {
-                  <span class="badge-warn">OBSOLÈTE</span>
-                }
-                @if (p.status === 'vulnerable') {
-                  <span class="badge-danger">VULNÉRABLE</span>
-                }
+            <p class="executive-copy">{{ selectedScan.executiveSummary }}</p>
+            <div class="executive-score-strip">
+              <div>
+                <span>Score IA</span>
+                <strong [ngClass]="selectedScan.riskClass">{{ selectedScan.score_risque_ia | number:'1.1-1' }}/10</strong>
               </div>
-            }
-          </div>
-
-          <section class="technology-card" aria-label="Technologies détectées par WhatWeb">
-            <div class="technology-card-header">
-              <span class="label">TECHNOLOGIES DÉTECTÉES</span>
-              <span class="technology-count">{{ technologies?.length ?? 0 }}</span>
+              <div>
+                <span>Score de s&eacute;curit&eacute;</span>
+                <strong>{{ selectedScan.securityScore }}/10</strong>
+              </div>
+              <div>
+                <span>Priorit&eacute;</span>
+                <strong>{{ selectedScan.primaryFinding?.priority ?? 'Surveillance' }}</strong>
+              </div>
             </div>
+          </section>
 
-            @if (technologies?.length > 0) {
-              <div class="technology-badges">
-                @for (technology of technologies; track technology.name) {
-                  <span class="technology-badge">
-                    {{ technology.name }}
-                    @if (technology.version?.length) {
-                      <span class="technology-version">{{ technology.version.join(', ') }}</span>
-                    }
-                  </span>
-                }
+          <section class="detail-card">
+            <div class="section-heading">
+              <span class="section-icon">i</span>
+              <div>
+                <span class="section-eyebrow">IDENTIT&Eacute; ET SUIVI</span>
+                <h3>Informations g&eacute;n&eacute;rales</h3>
               </div>
+            </div>
+            <div class="info-grid">
+              <div class="info-item"><span>Identifiant</span><strong>#{{ selectedScan.id }}</strong></div>
+              <div class="info-item"><span>Client</span><strong>{{ selectedScan.client_nom || 'Non renseign\u00e9' }}</strong></div>
+              <div class="info-item"><span>Domaine</span><strong class="cyan-value">{{ selectedScan.domaine }}</strong></div>
+              <div class="info-item"><span>Date et heure</span><strong>{{ selectedScan.date_scan | date:'dd/MM/yyyy HH:mm:ss' }}</strong></div>
+              <div class="info-item"><span>Dur&eacute;e du scan</span><strong>{{ selectedScan.durationLabel }}</strong></div>
+              <div class="info-item">
+                <span>Statut du scan</span>
+                <strong class="state-badge" [class.state-success]="selectedScan.status === 'COMPLETED'">{{ selectedScan.status }}</strong>
+              </div>
+              <div class="info-item"><span>Niveau de risque</span><strong [ngClass]="selectedScan.riskClass">{{ selectedScan.riskLabel }}</strong></div>
+              <div class="info-item"><span>Score IA</span><strong>{{ selectedScan.score_risque_ia | number:'1.1-1' }}/10</strong></div>
+              <div class="info-item"><span>Score de s&eacute;curit&eacute;</span><strong>{{ selectedScan.securityScore }}/10</strong></div>
+              <div class="info-item">
+                <span>Rapport PDF</span>
+                <strong class="modern-status" [class.success]="selectedScan.rapportStatus === 'pret'" [class.failed]="selectedScan.rapportStatus === 'erreur'">
+                  <i></i>{{ selectedScan.reportStatusLabel }}
+                </strong>
+              </div>
+              <div class="info-item">
+                <span>Statut de l'e-mail</span>
+                <strong class="modern-status" [class.success]="selectedScan.emailStatus === 'envoye'" [class.failed]="selectedScan.emailStatus === 'erreur'" [class.pending]="selectedScan.emailStatus !== 'envoye' && selectedScan.emailStatus !== 'erreur'">
+                  <i></i>{{ selectedScan.emailStatusLabel }}
+                </strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="detail-section">
+            <div class="section-heading section-heading-standalone">
+              <span class="section-icon">&#9632;</span>
+              <div>
+                <span class="section-eyebrow">EXPOSITION MESUR&Eacute;E</span>
+                <h3>Indicateurs de s&eacute;curit&eacute;</h3>
+              </div>
+            </div>
+            <div class="kpi-grid">
+              @for (kpi of selectedScan.kpis; track kpi.label) {
+                <article class="kpi-card" [attr.data-tone]="kpi.tone">
+                  <span class="kpi-icon">{{ kpi.icon }}</span>
+                  <strong>{{ kpi.value }}</strong>
+                  <span>{{ kpi.label }}</span>
+                </article>
+              }
+            </div>
+          </section>
+
+          <section class="detail-card">
+            <div class="section-heading">
+              <span class="section-icon">&#10003;</span>
+              <div>
+                <span class="section-eyebrow">COUVERTURE DU SCAN</span>
+                <h3>R&eacute;sultats des analyses</h3>
+              </div>
+            </div>
+            <div class="tools-table-wrap">
+              <table class="tools-table">
+                <thead>
+                  <tr>
+                    <th>Outil</th>
+                    <th>Statut</th>
+                    <th>Heure de fin</th>
+                    <th>Dur&eacute;e</th>
+                    <th>R&eacute;sultats</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (tool of selectedScan.toolsUi; track tool.key) {
+                    <tr>
+                      <td><span class="tool-dot" [attr.data-state]="tool.statusKey"></span><strong>{{ tool.label }}</strong></td>
+                      <td><span class="tool-state" [attr.data-state]="tool.statusKey">{{ tool.statusLabel }}</span></td>
+                      <td>{{ tool.completedAt ? (tool.completedAt | date:'HH:mm:ss') : 'Non mesur\u00e9e' }}</td>
+                      <td>{{ tool.durationLabel }}</td>
+                      <td>{{ tool.count }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="detail-card tls-card">
+            <div class="section-heading">
+              <span class="section-icon">TLS</span>
+              <div>
+                <span class="section-eyebrow">CHIFFREMENT ET TRANSPORT</span>
+                <h3>Configuration SSL/TLS</h3>
+              </div>
+            </div>
+            <div class="tls-summary-grid">
+              <div class="tls-summary-item">
+                <span>Certificat SSL</span>
+                <strong>{{ selectedScan.certificateStatus }}</strong>
+                <small>{{ selectedScan.resultats_ssl?.certificate?.not_after || 'Expiration non mesur\u00e9e' }}</small>
+              </div>
+              <div class="tls-summary-item">
+                <span>Versions TLS</span>
+                <strong>{{ selectedScan.protocolsUi?.length || 0 }}</strong>
+                <small>Protocoles observ&eacute;s</small>
+              </div>
+              <div class="tls-summary-item">
+                <span>Suites cryptographiques</span>
+                <strong>{{ selectedScan.resultats_ssl?.cipher_suites?.length || 0 }}</strong>
+                <small>Suites accept&eacute;es</small>
+              </div>
+              <div class="tls-summary-item">
+                <span>Port HTTPS</span>
+                <strong>{{ selectedScan.httpsPort ? selectedScan.httpsPort.port + '/tcp' : 'Non d\u00e9tect\u00e9' }}</strong>
+                <small>{{ selectedScan.httpsPort?.service || 'Service non mesur\u00e9' }}</small>
+              </div>
+            </div>
+            <div class="protocol-badges">
+              @for (protocol of selectedScan.protocolsUi; track protocol.name) {
+                <button type="button" class="protocol-badge" [attr.data-state]="protocol.statusKey" (click)="showProtocolDetail(protocol)">
+                  <strong>{{ protocol.name }}</strong>
+                  <span>{{ protocol.statusLabel }}</span>
+                </button>
+              } @empty {
+                <span class="empty-state">Aucun protocole TLS extrait.</span>
+              }
+            </div>
+          </section>
+
+          <section class="detail-card priority-card">
+            <div class="section-heading">
+              <span class="section-icon">!</span>
+              <div>
+                <span class="section-eyebrow">RECOMMANDATION P1</span>
+                <h3>Vuln&eacute;rabilit&eacute; prioritaire</h3>
+              </div>
+            </div>
+            @if (selectedScan.primaryFinding) {
+              <div class="priority-header">
+                <div>
+                  <span class="finding-type">{{ selectedScan.primaryFinding.cve || 'CONSTAT TECHNIQUE' }}</span>
+                  <h4>{{ selectedScan.primaryFinding.name }}</h4>
+                </div>
+                <div class="finding-score">
+                  <span>CVSS</span>
+                  <strong>{{ selectedScan.primaryFinding.score ?? 'N/A' }}</strong>
+                </div>
+              </div>
+              <div class="finding-grid">
+                <div><span>Criticit&eacute;</span><strong [attr.data-severity]="selectedScan.primaryFinding.severityKey">{{ selectedScan.primaryFinding.severity || selectedScan.primaryFinding.severityKey }}</strong></div>
+                <div><span>Priorit&eacute;</span><strong>{{ selectedScan.primaryFinding.priority }}</strong></div>
+                <div class="wide"><span>Description</span><p>{{ selectedScan.primaryFinding.description || 'Description non fournie par la source.' }}</p></div>
+                <div class="wide"><span>Impact</span><p>{{ selectedScan.primaryFinding.impact || 'Impact \u00e0 confirmer selon le contexte m\u00e9tier.' }}</p></div>
+                <div class="wide solution-block"><span>Solution recommand&eacute;e</span><p>{{ selectedScan.primaryFinding.solution || 'Consulter le rapport pour la proc\u00e9dure de correction.' }}</p></div>
+              </div>
+              <button type="button" class="secondary-action" (click)="voirToutesLesVulnerabilites()">Voir toutes les vuln&eacute;rabilit&eacute;s</button>
             } @else {
-              <p class="technology-empty">Aucune technologie détectée</p>
+              <div class="empty-state success-empty">Aucune vuln&eacute;rabilit&eacute; prioritaire d&eacute;duite des r&eacute;sultats disponibles.</div>
             }
           </section>
 
-          @if (selectedScan.resultats_ssl?.vulnerabilities?.length > 0) {
-            <div class="scan-section">
-              <span class="label">VULNÉRABILITÉS DÉTECTÉES:</span>
-              <div class="tag-list">
-                @for (vulnerability of selectedScan.resultats_ssl.vulnerabilities; track vulnerability) {
-                  <span class="badge danger">{{ vulnerability }}</span>
+          <section class="detail-card">
+            <div class="section-heading">
+              <span class="section-icon">T</span>
+              <div>
+                <span class="section-eyebrow">EMPREINTE LOGICIELLE</span>
+                <h3>Technologies d&eacute;tect&eacute;es</h3>
+              </div>
+              <span class="count-pill">{{ selectedScan.technologiesUi?.length || 0 }}</span>
+            </div>
+            <div class="technology-cloud">
+              @for (technology of selectedScan.technologiesUi; track technology.name) {
+                <span class="modern-tech-badge">
+                  {{ technology.name }}
+                  @if (technology.version?.length) {
+                    <small>{{ technology.version.join(', ') }}</small>
+                  }
+                </span>
+              } @empty {
+                <span class="empty-state">Aucune technologie d&eacute;tect&eacute;e par WhatWeb.</span>
+              }
+            </div>
+          </section>
+
+          <section class="detail-card quick-actions-card">
+            <div class="section-heading">
+              <span class="section-icon">&#9654;</span>
+              <div>
+                <span class="section-eyebrow">OP&Eacute;RATIONS</span>
+                <h3>Actions rapides</h3>
+              </div>
+            </div>
+            <div class="quick-actions-grid">
+              <button type="button" (click)="consulterRapport(selectedScan, $event)"><span>&#128196;</span>Consulter le rapport</button>
+              <button type="button" (click)="telechargerRapportPdf(selectedScan, $event)" [disabled]="selectedScan.pdfGenerating || selectedScan.pdfDownloading"><span>&#8681;</span>T&eacute;l&eacute;charger PDF</button>
+              <button type="button" (click)="exportExcel(selectedScan, $event)"><span>&#9638;</span>Export Excel</button>
+              <button type="button" (click)="exportJson(selectedScan, $event)"><span>JSON</span>Export JSON</button>
+              <button type="button" (click)="envoyerRapportEmail(selectedScan, $event)" [disabled]="selectedScan.emailSending"><span>&#9993;</span>Envoyer par e-mail</button>
+              <button type="button" (click)="imprimerRapport(selectedScan, $event)"><span>&#9113;</span>Imprimer</button>
+              <button type="button" (click)="genererQrCode(selectedScan, $event)" [disabled]="qrLoading"><span>QR</span>{{ qrLoading ? 'G\u00e9n\u00e9ration...' : 'G\u00e9n\u00e9rer un QR Code' }}</button>
+              <button type="button" (click)="relancerScan(selectedScan, $event)" [disabled]="relaunching"><span>&#8635;</span>{{ relaunching ? 'Mise en file...' : 'Relancer le scan' }}</button>
+            </div>
+            @if (qrCodeUrl) {
+              <div class="qr-preview">
+                <img [src]="qrCodeUrl" alt="QR Code du rapport du scan" />
+                <div>
+                  <strong>QR Code du rapport</strong>
+                  <span>Scannez pour acc&eacute;der au rapport CyberScan.</span>
+                </div>
+              </div>
+            }
+          </section>
+
+          <section class="detail-card timeline-card">
+            <div class="section-heading">
+              <span class="section-icon">&#9719;</span>
+              <div>
+                <span class="section-eyebrow">TRA&Ccedil;ABILIT&Eacute;</span>
+                <h3>Historique du scan</h3>
+              </div>
+            </div>
+            <ol class="scan-timeline">
+              @for (event of selectedScan.timelineUi; track event.type + event.timestamp) {
+                <li>
+                  <time>{{ event.timestamp | date:'HH:mm:ss' }}</time>
+                  <span class="timeline-node"></span>
+                  <div><strong>{{ event.label }}</strong><small>{{ event.timestamp | date:'dd/MM/yyyy' }}</small></div>
+                </li>
+              } @empty {
+                <li class="timeline-empty"><span class="timeline-node"></span><div>Aucun &eacute;v&eacute;nement horodat&eacute; disponible.</div></li>
+              }
+            </ol>
+          </section>
+
+          <section class="detail-card vulnerabilities-card" id="all-vulnerabilities">
+            <div class="section-heading">
+              <span class="section-icon">V</span>
+              <div>
+                <span class="section-eyebrow">CONSTATS CONSOLID&Eacute;S</span>
+                <h3>Toutes les vuln&eacute;rabilit&eacute;s</h3>
+              </div>
+              <span class="count-pill">{{ selectedScan.allFindings?.length || 0 }}</span>
+            </div>
+            <div class="findings-list">
+              @for (finding of selectedScan.allFindings; track finding.cve || finding.name) {
+                <article class="finding-row">
+                  <span class="severity-bar" [attr.data-severity]="finding.severityKey"></span>
+                  <div class="finding-main">
+                    <strong>{{ finding.name }}</strong>
+                    <span>{{ finding.cve || (finding.manual ? 'MANUELLE' : 'TECHNIQUE') }}</span>
+                  </div>
+                  <span class="finding-priority">{{ finding.priority }}</span>
+                  <span class="finding-cvss">{{ finding.score ?? 'N/A' }}</span>
+                  @if (finding.manual) {
+                    <button type="button" class="icon-delete" (click)="deleteVulnManuelle(finding.id)" aria-label="Supprimer">&times;</button>
+                  }
+                </article>
+              } @empty {
+                <div class="empty-state success-empty">Aucune vuln&eacute;rabilit&eacute; consolid&eacute;e.</div>
+              }
+            </div>
+            <div class="manual-toolbar">
+              <span>{{ vulnsManuelles.length }} vuln&eacute;rabilit&eacute;(s) manuelle(s)</span>
+              <button type="button" class="secondary-action" (click)="openVulnForm()">+ Ajouter une vuln&eacute;rabilit&eacute;</button>
+            </div>
+          </section>
+
+          <section class="detail-card technical-reports-card">
+            <details>
+              <summary>Rapports techniques bruts</summary>
+              <div class="raw-reports-grid">
+                @if (selectedScan.resultats_ssl?.nmap) {
+                  <details class="raw-report"><summary>Nmap</summary><pre>{{ selectedScan.resultats_ssl.nmap }}</pre></details>
+                }
+                @if (selectedScan.resultats_ssl?.openssl) {
+                  <details class="raw-report"><summary>OpenSSL</summary><pre>{{ selectedScan.resultats_ssl.openssl }}</pre></details>
+                }
+                @if (selectedScan.resultats_ssl?.sslscan) {
+                  <details class="raw-report"><summary>SSLScan</summary><pre>{{ selectedScan.resultats_ssl.sslscan }}</pre></details>
                 }
               </div>
-            </div>
-          }
-
-          @if (selectedScan.cves?.length > 0) {
-            <div class="scan-section">
-              <span class="label">CVE ASSOCIÉES:</span>
-              @for (cve of selectedScan.cves; track cve.id) {
-                <div class="cve-item">
-                  <div class="cve-heading">
-                    <strong>{{ cve.cve_id }}</strong>
-                    <span class="badge warn">CVSS {{ cve.cvss_score }}/10</span>
-                  </div>
-                  <p>{{ cve.description }}</p>
-                  @if (cve.recommandation_ia) {
-                    <p class="recommendation">RECOMMANDATION: {{ cve.recommandation_ia }}</p>
-                  }
-                </div>
-              }
-            </div>
-          }
-
-          <div class="scan-section">
-            <span class="label">CVE DÉTECTÉES (NVD):</span>
-            @let nvdCves = selectedScan.resultats_ssl?.nvd_cves;
-            @if (nvdCves?.length > 0) {
-              @for (cve of nvdCves; track cve.cve_id ?? cve.id) {
-                <div class="cve-item">
-                  <div class="cve-heading">
-                    <strong>{{ cve.cve_id ?? cve.id }}</strong>
-                    <span class="badge warn">CVSS {{ cve.cvss_score ?? cve.cvssScore ?? cve.score ?? 'N/A' }}</span>
-                  </div>
-                  <p>
-                    <span class="label">SÉVÉRITÉ :</span>
-                    {{ cve.severity ?? cve.baseSeverity ?? cve.severite ?? 'N/A' }}
-                  </p>
-                  <p>{{ cve.description ?? 'Aucune description disponible.' }}</p>
-                  <p>
-                    <span class="label">PUBLIÉE LE :</span>
-                    {{ (cve.date_publication ?? cve.published ?? cve.publishedDate) | date:'dd/MM/yyyy' }}
-                  </p>
-                </div>
-              }
-            } @else {
-              <p class="technology-empty">Aucune CVE trouvée.</p>
-            }
-          </div>
-
-          <div class="scan-section">
-            <span class="label">RAPPORTS TECHNIQUES:</span>
-            @if (selectedScan.resultats_ssl?.nmap) {
-              <details class="raw-report">
-                <summary>Nmap</summary>
-                <pre>{{ selectedScan.resultats_ssl.nmap }}</pre>
-              </details>
-            }
-            @if (selectedScan.resultats_ssl?.openssl) {
-              <details class="raw-report">
-                <summary>OpenSSL</summary>
-                <pre>{{ selectedScan.resultats_ssl.openssl }}</pre>
-              </details>
-            }
-            @if (selectedScan.resultats_ssl?.sslscan) {
-              <details class="raw-report">
-                <summary>SSLScan</summary>
-                <pre>{{ selectedScan.resultats_ssl.sslscan }}</pre>
-              </details>
-            }
-          </div>
-
-          <div class="vulns-manuelles-section" style="margin-top: 20px; border-top: 1px solid rgba(0,255,65,0.2); padding-top: 15px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span class="label">VULNÉRABILITÉS MANUELLES:</span>
-                <button type="button" class="action-btn" (click)="openVulnForm()" style="padding: 4px 10px; border: 1px solid #00ff41; background: transparent; color: #00ff41; cursor: pointer;">
-                  + Ajouter
-                </button>
-              </div>
-
-              @if (vulnsManuelles.length === 0) {
-                <p style="opacity: 0.6; font-size: 0.9em;">Aucune vulnérabilité manuelle ajoutée.</p>
-              }
-
-              @for (v of vulnsManuelles; track v.id) {
-                <div style="border: 1px solid rgba(0,255,65,0.3); padding: 10px; margin-bottom: 8px;">
-                  <div style="display: flex; justify-content: space-between;">
-                    <strong>{{ v.nom }}</strong>
-                    <button type="button" (click)="deleteVulnManuelle(v.id)" style="background: none; border: none; color: #ff4444; cursor: pointer;" aria-label="Supprimer la vulnérabilité">🗑</button>
-                  </div>
-                  <div style="font-size: 0.85em; opacity: 0.8;">
-                    {{ v.type_vuln | uppercase }} — CVSS {{ v.cvss_score }}/10 — {{ v.risk | uppercase }}
-                  </div>
-                </div>
-              }
-          </div>
+            </details>
+          </section>
 
           @if (showVulnForm && selectedScan) {
             <app-vuln-manuelle-form
@@ -466,14 +545,14 @@
             ></app-vuln-manuelle-form>
           }
 
-          <div class="modal-actions">
-            <button type="button" class="modal-btn delete-btn" (click)="deleteScan(selectedScan, $event)">🗑 SUPPRIMER</button>
-          </div>
+          <footer class="detail-footer">
+            <span>Les actions destructives restent volontairement isol&eacute;es.</span>
+            <button type="button" class="danger-action" (click)="deleteScan(selectedScan, $event)">Supprimer le scan</button>
+          </footer>
         </div>
-      </div>
+      </article>
     </div>
   }
-
   <!-- MODAL PROTOCOLE -->
   @if (selectedProtocol) {
     <div class="proto-modal-overlay" (click)="closeProtocolDetail()">

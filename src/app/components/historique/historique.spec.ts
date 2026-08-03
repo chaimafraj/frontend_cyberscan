@@ -48,6 +48,67 @@ describe('Historique', () => {
     req.flush({ results: [], total: 0, total_pages: 1, page: 1 });
   });
 
+  it('builds the professional detail view from the real scan response', () => {
+    component.viewScan({
+      id: 176,
+      domaine: 'audit.example',
+      date_scan: '2026-08-03T10:00:00Z',
+      score_risque_ia: 8.2,
+      status: 'COMPLETED',
+      resultats_ssl: {},
+    });
+
+    const detailRequest = httpMock.expectOne('http://127.0.0.1:8000/api/scans/176/');
+    const manualRequest = httpMock.expectOne(
+      'http://127.0.0.1:8000/api/scans/176/vulnerabilites/',
+    );
+
+    detailRequest.flush({
+      id: 176,
+      domaine: 'audit.example',
+      client_nom: 'Client test',
+      date_scan: '2026-08-03T10:00:00Z',
+      score_risque_ia: 8.2,
+      status: 'COMPLETED',
+      duration_seconds: 18.4,
+      report_status: 'pret',
+      email_status: 'envoye',
+      timeline: [
+        { type: 'scan.completed', label: 'Scan termine', timestamp: '2026-08-03T10:00:18Z' },
+      ],
+      cves: [{
+        cve_id: 'CVE-2026-12345',
+        cvss_score: 9.8,
+        produit_concerne: 'Django',
+        description: 'Correctif requis',
+        recommandation_ia: 'Mettre a jour Django',
+      }],
+      resultats_ssl: {
+        sslscan: 'TLSv1.2 enabled',
+        protocols: [{ name: 'TLSv1.2', status: 'secure' }],
+        cipher_suites: [{ name: 'TLS_AES_256_GCM_SHA384' }],
+        ports: [{ port: 443, protocol: 'tcp', service: 'https' }],
+        whatweb: { success: true, technologies: [{ name: 'Django', version: ['5.0'] }] },
+        tool_executions: {
+          sslscan: {
+            success: true,
+            duration_seconds: 1.2,
+            completed_at: '2026-08-03T10:00:01Z',
+          },
+        },
+      },
+    });
+    manualRequest.flush([]);
+
+    expect(component.selectedScan.executiveSummary).toContain('audit.example');
+    expect(component.selectedScan.durationLabel).toBe('18 s');
+    expect(component.selectedScan.reportStatusLabel).toBe('Rapport disponible');
+    expect(component.selectedScan.emailStatusLabel).toBe('E-mail envoy\u00e9');
+    expect(component.selectedScan.primaryFinding.cve).toBe('CVE-2026-12345');
+    expect(component.selectedScan.technologiesUi[0].name).toBe('Django');
+    expect(component.selectedScan.toolsUi.find((tool: any) => tool.key === 'sslscan').statusKey)
+      .toBe('completed');
+  });
   it('should refresh paginator bindings after the scans response', () => {
     component.loadScans();
 

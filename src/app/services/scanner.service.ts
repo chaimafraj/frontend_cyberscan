@@ -70,6 +70,13 @@ export class ScannerService {
     });
   }
 
+  /** QR Code SVG du rapport */
+  getReportQr(scanId: number): Observable<Blob> {
+    return this.http.get(
+      'http://127.0.0.1:8000/api/scans/' + scanId + '/rapport/qr/',
+      { responseType: 'blob' },
+    );
+  }
   /** Envoi / renvoi du rapport par email (PDF en pièce jointe) */
   sendRapportEmail(scanId: number, email?: string): Observable<any> {
     const body = email ? { email } : {};
